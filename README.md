@@ -5,9 +5,9 @@
 ---
 
 ## ✅ What I Worked On
-- Added map tool generator
-- Introduced path generation
-- Separated map in four zones
+- Added procedural map geneartion tools
+- Implemented path generation
+- Split the map into four distinct zones
 - Generated walls to separate zones
 
 ---
