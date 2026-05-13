@@ -50,14 +50,14 @@ public class WallManager : MonoBehaviour
         foreach (Vector2Int localPos in zone.WallTiles)
         {
             Vector3 worldPos = new Vector3(
-                zone.worldOffset.x + localPos.x + 0.5f,
+                (zone.worldOffset.x + localPos.x + 0.5f) * MasterManager.TileScale,
                 maxWallHeight / 2f,
-                zone.worldOffset.y + localPos.y + 0.5f
+                (zone.worldOffset.y + localPos.y + 0.5f) * MasterManager.TileScale
             );
 
              GameObject wall = Instantiate(zoneWallPrefab, worldPos, Quaternion.identity, container);
 
-            wall.transform.localScale = new Vector3(1f, maxWallHeight, 1f);
+            wall.transform.localScale = new Vector3(MasterManager.TileScale, maxWallHeight, MasterManager.TileScale);
         }
 
     }
@@ -110,13 +110,13 @@ public class WallManager : MonoBehaviour
             float height = Mathf.Lerp(minWallHeight, maxWallHeight, t);
 
             Vector3 worldPos = new Vector3(
-                worldOffset.x + localPos.x + 0.5f,
+                (worldOffset.x + localPos.x + 0.5f) * MasterManager.TileScale,
                 height / 2f,
-                worldOffset.y + localPos.y + 0.5f
+                (worldOffset.y + localPos.y + 0.5f) * MasterManager.TileScale
             );
 
             GameObject wall = Instantiate(targetWallPrefab, worldPos, Quaternion.identity, targetWallContainer);
-            wall.transform.localScale = new Vector3(1f, height, 1f);
+            wall.transform.localScale = new Vector3(MasterManager.TileScale, height, MasterManager.TileScale);
         }
 
         if (maxDistance < 0.001f) maxDistance = 1f;

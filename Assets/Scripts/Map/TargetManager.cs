@@ -85,7 +85,7 @@ public class TargetManager : MonoBehaviour
             {
                 for (int z = 0; z < targetGrid.gridHeight; z++)
                 {
-                    Vector3 center = new Vector3(worldOffset.x + x + 0.5f, 0, worldOffset.y + z + 0.5f);
+                    Vector3 center = new Vector3((worldOffset.x + x + 0.5f) * MasterManager.TileScale, 0, (worldOffset.y + z + 0.5f) * MasterManager.TileScale);
                     Vector2Int pos = new Vector2Int(x, z);
                     Tile tile = targetGrid.gridArray[x, z];
 

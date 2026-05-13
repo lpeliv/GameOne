@@ -29,6 +29,8 @@ public class MasterManager : MonoBehaviour
 
     private string savePath => Application.persistentDataPath + "/fullmap.json";
 
+    public static float TileScale = 10f;
+
     [ContextMenu("Generate Full Map")]
     private void GenerateMap()
     {

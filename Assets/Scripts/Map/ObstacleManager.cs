@@ -42,9 +42,9 @@ public class ObstacleManager : MonoBehaviour
             if(prefab == null) continue;
 
             Vector3 worldPos = new Vector3(
-                worldOffset.x + data.rootTile.x + data.sizeX / 2f,
+                (worldOffset.x + data.rootTile.x + data.sizeX / 2f) * MasterManager.TileScale,
                 0f,
-                worldOffset.y + data.rootTile.y + data.sizeZ / 2f
+                (worldOffset.y + data.rootTile.y + data.sizeZ / 2f) * MasterManager.TileScale
             );
 
             Quaternion rotation = (data.sizeX != def.sizeX)

@@ -50,18 +50,20 @@ public class ZoneGridManager : MonoBehaviour
         Gizmos.color = Color.white;
         for (int x = 0; x <= gridInstance.gridWidth; x++)
         {
-            Gizmos.DrawLine(new Vector3(x + worldOffset.x, 0, worldOffset.y), new Vector3(x + worldOffset.x, 0, worldOffset.y + gridInstance.gridHeight));
+            Gizmos.DrawLine(new Vector3((x + worldOffset.x) * MasterManager.TileScale, 0, worldOffset.y * MasterManager.TileScale), 
+                new Vector3((x + worldOffset.x) * MasterManager.TileScale, 0, (worldOffset.y + gridInstance.gridHeight) * MasterManager.TileScale));
         }
         for (int z = 0; z <= gridInstance.gridHeight; z++)
         {
-            Gizmos.DrawLine(new Vector3(worldOffset.x, 0, z + worldOffset.y), new Vector3(worldOffset.x + gridInstance.gridWidth, 0, z + worldOffset.y));
+            Gizmos.DrawLine(new Vector3(worldOffset.x * MasterManager.TileScale, 0, (z + worldOffset.y) * MasterManager.TileScale),
+                new Vector3((worldOffset.x + gridInstance.gridWidth) * MasterManager.TileScale, 0, (z + worldOffset.y) * MasterManager.TileScale));
         }
 
         for (int x = 0; x < gridInstance.gridWidth; x++)
         {
             for (int z = 0; z < gridInstance.gridHeight; z++)
             {
-                Vector3 center = new Vector3(worldOffset.x + x + 0.5f, 0, worldOffset.y + z + 0.5f);
+                Vector3 center = new Vector3((worldOffset.x + x + 0.5f) * MasterManager.TileScale, 0, (worldOffset.y + z + 0.5f) * MasterManager.TileScale);
                 Tile tile = gridInstance.gridArray[x, z];
 
                 Gizmos.color = tile.type switch
@@ -77,7 +79,7 @@ public class ZoneGridManager : MonoBehaviour
         }
 
         Gizmos.color = new Color(1f, 0.4f, 0.8f);
-        Vector3 endCenter = new Vector3(worldOffset.x + endingPos.x + 0.5f, 0, worldOffset.y + endingPos.y + 0.5f);
+        Vector3 endCenter = new Vector3((worldOffset.x + endingPos.x + 0.5f) * MasterManager.TileScale, 0, (worldOffset.y + endingPos.y + 0.5f) * MasterManager.TileScale);
         Gizmos.DrawCube(endCenter, new Vector3(0.9f, 0.3f, 0.9f));
         
         if (pathGenerator != null && pathGenerator.spawnPoints != null)
@@ -85,12 +87,12 @@ public class ZoneGridManager : MonoBehaviour
             Gizmos.color = Color.blue;
             foreach (Vector2Int point in pathGenerator.spawnPoints)
             {
-                Vector3 center = new Vector3(worldOffset.x + point.x + 0.5f, 0, worldOffset.y + point.y + 0.5f);
+                Vector3 center = new Vector3((worldOffset.x + point.x + 0.5f) * MasterManager.TileScale, 0, (worldOffset.y + point.y + 0.5f) * MasterManager.TileScale);
                 Gizmos.DrawCube(center, new Vector3(0.5f, 0.5f, 0.5f));
             }
         }
         Gizmos.color = new Color(1f, 0.5f, 0f);
-        Vector3 spawnCenter = new Vector3(worldOffset.x + startingPos.x + 0.5f, 0, worldOffset.y + startingPos.y + 0.5f);
+        Vector3 spawnCenter = new Vector3((worldOffset.x + startingPos.x + 0.5f) * MasterManager.TileScale, 0, (worldOffset.y + startingPos.y + 0.5f) * MasterManager.TileScale);
         Gizmos.DrawCube(spawnCenter, new Vector3(0.9f, 0.3f, 0.9f));
 
         if (branchGenerator != null && branchGenerator.edgeCandidates != null)
@@ -98,7 +100,7 @@ public class ZoneGridManager : MonoBehaviour
             Gizmos.color = new Color(0.7f, 0.7f, 0.7f, 0.4f);
             foreach (Vector2Int c in branchGenerator.edgeCandidates)
             {
-                Vector3 center = new Vector3(worldOffset.x + c.x + 0.5f, 0, worldOffset.y + c.y + 0.5f);
+                Vector3 center = new Vector3((worldOffset.x + c.x + 0.5f) * MasterManager.TileScale, 0, (worldOffset.y + c.y + 0.5f) * MasterManager.TileScale);
                 Gizmos.DrawCube(center, new Vector3(0.6f, 0.15f, 0.6f));
             }
         }
@@ -108,7 +110,7 @@ public class ZoneGridManager : MonoBehaviour
             Gizmos.color = Color.cyan;
             foreach (Vector2Int bp in branchGenerator.branchSpawnPoints)
             {
-                Vector3 center = new Vector3(worldOffset.x + bp.x + 0.5f, 0, worldOffset.y + bp.y + 0.5f);
+                Vector3 center = new Vector3((worldOffset.x + bp.x + 0.5f) * MasterManager.TileScale, 0, (worldOffset.y + bp.y + 0.5f) * MasterManager.TileScale);
                 Gizmos.DrawCube(center, new Vector3(0.8f, 0.5f, 0.8f));
             }
         }
@@ -119,7 +121,7 @@ public class ZoneGridManager : MonoBehaviour
             for (int z = 0; z < gridInstance.gridHeight; z++)
             {
                 if (gridInstance.gridArray[x, z].type != TileType.Buildable) continue;
-                Vector3 center = new Vector3(worldOffset.x + x + 0.5f, 0, worldOffset.y + z + 0.5f);
+                Vector3 center = new Vector3((worldOffset.x + x + 0.5f) * MasterManager.TileScale, 0, (worldOffset.y + z + 0.5f) * MasterManager.TileScale);
                 Gizmos.DrawCube(center, new Vector3(0.8f, 0.05f, 0.8f));
             }
         }

@@ -52,9 +52,9 @@ public class MapVisualizer : MonoBehaviour
                 if (prefab == null) continue;
 
                 Vector3 worldPos = new Vector3(
-                    worldOffset.x + x + 0.5f,
+                    (worldOffset.x + x + 0.5f) * MasterManager.TileScale,
                     0f,
-                    worldOffset.y + z + 0.5f
+                    (worldOffset.y + z + 0.5f) * MasterManager.TileScale
                 );
 
                 Instantiate(prefab, worldPos, Quaternion.identity, transform);
@@ -85,9 +85,9 @@ public class MapVisualizer : MonoBehaviour
                 Tile tile = grid.gridArray[x, z];
 
                 Vector3 worldPos = new Vector3(
-                    worldOffset.x + x + 0.5f,
+                    (worldOffset.x + x + 0.5f) * MasterManager.TileScale,
                     0f,
-                    worldOffset.y + z + 0.5f
+                    (worldOffset.y + z + 0.5f) * MasterManager.TileScale
                 );
 
                 switch (tile.type)
@@ -119,10 +119,11 @@ public class MapVisualizer : MonoBehaviour
 
         foreach (Vector2Int budPos in targetManager.healthBudPositions)
         {
-            Vector3 worldPos = new Vector3(
-                worldOffset.x + budPos.x + 0.5f,
+            Vector3 worldPos = new Vector3
+                (
+                    (worldOffset.x + budPos.x + 0.5f) * MasterManager.TileScale,
                     0.2f,
-                    worldOffset.y + budPos.y + 0.5f
+                    (worldOffset.y + budPos.y + 0.5f) * MasterManager.TileScale
                 );
             Quaternion rotation = Quaternion.Euler(45f, 45f, 0f);
             GameObject bud = Instantiate(healthBudPrefab, worldPos, rotation, transform);
