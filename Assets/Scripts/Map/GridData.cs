@@ -42,5 +42,7 @@ public class ZoneGridData
     public List<TileData> tiles;
     public List<Vector2Int> spawnpoints;
     public List<Vector2Int> branchSpawnPoints;
+    public List<Vector2Int> branchMergeTiles;
     public List<ObstaclePlacementData> obstacles;
+    public List<SpawnerData> spawners;
 }

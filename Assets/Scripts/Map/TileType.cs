@@ -8,4 +8,5 @@ public enum TileType
     House,
     Branch,
     OccupiedObstacle,
+    Spawner,
 }

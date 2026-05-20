@@ -22,8 +22,9 @@ public class MasterManager : MonoBehaviour
     [SerializeField] private int branchEndpointExclusion = 10;
 
     [SerializeField] private ObstacleManager obstacleManager;
-
     [SerializeField] private WallManager wallManager;
+    [SerializeField] private SpawnerManager spawnerManager;
+    [SerializeField] private BranchObstacleManager branchObstacleManager;
 
     private HashSet<Vector2Int> globalWallPositions;
 
@@ -75,6 +76,26 @@ public class MasterManager : MonoBehaviour
         wallManager.SpawnZoneWalls(leftGrid, Side.Left);
         wallManager.SpawnTargetWalls(targetManager);
 
+        topGrid.GenerateSpawners();
+        bottomGrid.GenerateSpawners();
+        leftGrid.GenerateSpawners();
+        rightGrid.GenerateSpawners();
+
+        spawnerManager.SpawnSpawners(topGrid.spawnerPlacer, Side.Top);
+        spawnerManager.SpawnSpawners(bottomGrid.spawnerPlacer, Side.Bottom);
+        spawnerManager.SpawnSpawners(leftGrid.spawnerPlacer, Side.Left);
+        spawnerManager.SpawnSpawners(rightGrid.spawnerPlacer, Side.Right);
+
+        topGrid.BuildPath();
+        bottomGrid.BuildPath();
+        leftGrid.BuildPath();
+        rightGrid.BuildPath();
+
+        branchObstacleManager.PlaceObstacles(topGrid, Side.Top);
+        branchObstacleManager.PlaceObstacles(bottomGrid, Side.Bottom);
+        branchObstacleManager.PlaceObstacles(leftGrid, Side.Left);
+        branchObstacleManager.PlaceObstacles(rightGrid, Side.Right);
+
         Visualise();
 #endif
     }
@@ -123,6 +144,21 @@ public class MasterManager : MonoBehaviour
         wallManager.SpawnZoneWalls(rightGrid, Side.Right);
         wallManager.SpawnZoneWalls(leftGrid, Side.Left);
         wallManager.SpawnTargetWalls(targetManager);
+
+        spawnerManager.SpawnSpawnersFromData(topGrid.spawnerPlacer.placedSpawners, Side.Top);
+        spawnerManager.SpawnSpawnersFromData(bottomGrid.spawnerPlacer.placedSpawners, Side.Bottom);
+        spawnerManager.SpawnSpawnersFromData(leftGrid.spawnerPlacer.placedSpawners, Side.Left);
+        spawnerManager.SpawnSpawnersFromData(rightGrid.spawnerPlacer.placedSpawners, Side.Right);
+
+        topGrid.BuildPath();
+        bottomGrid.BuildPath();
+        leftGrid.BuildPath();
+        rightGrid.BuildPath();
+
+        branchObstacleManager.PlaceObstacles(topGrid, Side.Top);
+        branchObstacleManager.PlaceObstacles(bottomGrid, Side.Bottom);
+        branchObstacleManager.PlaceObstacles(leftGrid, Side.Left);
+        branchObstacleManager.PlaceObstacles(rightGrid, Side.Right);
     }
 
     private void Visualise()

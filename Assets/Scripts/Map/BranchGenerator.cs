@@ -14,6 +14,8 @@ public class BranchGenerator
     public List<Vector2Int> edgeCandidates;
     private int maxAttempts = 1000;
 
+    public List<Vector2Int> branchMergeTiles;
+
     public BranchGenerator(Grid grid, Vector2Int startingPos, Vector2Int endingPos, Side facingSide, Vector2Int worldOffset, HashSet<Vector2Int> globalWalls)
     {
         this.gridInstance = grid;
@@ -28,6 +30,7 @@ public class BranchGenerator
     {
         edgeCandidates = CollectEdgeCandidate(endpointExclusionRadius);
         branchSpawnPoints = SelectSpawnPoints(edgeCandidates, count, minSpacing);
+        branchMergeTiles = new List<Vector2Int>();
     }
 
     private List<Vector2Int> CollectEdgeCandidate(int endpointExclusionRadius)
@@ -182,15 +185,19 @@ public class BranchGenerator
         for (int attempt = 0; attempt < maxAttempts; attempt++)
         {
             ResetBranch();
-            if(RunBranchGeneration(spawner))
+            Vector2Int mergeTitle = Vector2Int.zero;
+            if (RunBranchGeneration(spawner, out mergeTitle))
+            {
+                branchMergeTiles.Add(mergeTitle);
                 return true;
+            }
         }
-
         return false;
     }
 
-    private bool RunBranchGeneration(Vector2Int spawner)
+    private bool RunBranchGeneration(Vector2Int spawner, out Vector2Int mergeTile)
     {
+        mergeTile = Vector2Int.zero;
         Vector2Int currentPos = spawner;
         SetTile(currentPos, TileType.Branch);
 
@@ -200,13 +207,14 @@ public class BranchGenerator
         {
             if (IsAdjacentToPath(currentPos))
             {
+                mergeTile = currentPos;
                 CommitBranch();
                 return true;
             }
 
             Vector2Int direction = GetBranchDirection(currentPos);
 
-            if(direction == Vector2.zero)
+            if (direction == Vector2Int.zero)
             {
                 ResetBranch();
                 return false;
@@ -216,6 +224,7 @@ public class BranchGenerator
 
             if (gridInstance.gridArray[nextPos.x, nextPos.y].type == TileType.Path)
             {
+                mergeTile = currentPos;
                 CommitBranch();
                 return true;
             }

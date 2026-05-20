@@ -24,7 +24,12 @@ public class ZoneGridManager : MonoBehaviour
     [SerializeField] private int obstacleMinSpacing = 3;
     [SerializeField] public ObstacleCatalogue obstacleCatalogue;
 
+    //[Header("Spawner Settings")]
+    //[SerializeField] private int spawnerMinDistanceFromEnd = 6;
+
+    public SpawnerPlacer spawnerPlacer;
     public ObstaclePlacer obstaclePlacer;
+    public EnemyPath enemyPath;
 
     public void Initialize(int width, int height, Vector2Int offset, Side facing, Vector2Int targetSize, Vector2Int targetOffset, Vector2Int worldOffset, HashSet<Vector2Int> globalWalls)
     {
@@ -278,7 +283,19 @@ public class ZoneGridManager : MonoBehaviour
 
         pathGenerator.GenerateBuildables(allSpawners);
     }
-    
+
+    public void GenerateSpawners()
+    {
+        spawnerPlacer = new SpawnerPlacer(gridInstance, worldOffset, facingSide);
+        spawnerPlacer.Place(startingPos, branchGenerator?.branchSpawnPoints);
+    }
+
+    public void BuildPath()
+    {
+        EnemyPathBuilder builder = new EnemyPathBuilder(gridInstance, worldOffset, facingSide);
+        enemyPath = builder.Build(startingPos, endingPos);
+    }
+
     public ZoneGridData GetSaveData()
     {
         ZoneGridData data = new ZoneGridData();
@@ -290,8 +307,10 @@ public class ZoneGridManager : MonoBehaviour
         data.startingPos = startingPos;
         data.spawnpoints = pathGenerator.spawnPoints;
         data.branchSpawnPoints = branchGenerator?.branchSpawnPoints ?? new List<Vector2Int>();
+        data.branchMergeTiles = branchGenerator?.branchMergeTiles ?? new List<Vector2Int>();
         data.tiles = new List<TileData>();
         data.obstacles = obstaclePlacer?.placedObstacles ?? new List<ObstaclePlacementData>();
+        data.spawners = spawnerPlacer?.placedSpawners ?? new List<SpawnerData>();
         
 
         for (int x = 0; x < gridInstance.gridWidth; x++)
@@ -334,9 +353,13 @@ public class ZoneGridManager : MonoBehaviour
 
         branchGenerator = new BranchGenerator(gridInstance, endingPos, startingPos, facingSide, worldOffset, null);
         branchGenerator.branchSpawnPoints = data.branchSpawnPoints ?? new List<Vector2Int>();
+        branchGenerator.branchMergeTiles = data.branchMergeTiles ?? new List<Vector2Int>();
 
         obstaclePlacer = new ObstaclePlacer(gridInstance, obstacleCatalogue, worldOffset);
         obstaclePlacer.placedObstacles = data.obstacles ?? new List<ObstaclePlacementData>();
+
+        spawnerPlacer = new SpawnerPlacer(gridInstance, worldOffset, facingSide);
+        spawnerPlacer.placedSpawners = data.spawners ?? new List<SpawnerData>();
 
     }
 
