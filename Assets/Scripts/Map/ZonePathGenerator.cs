@@ -17,6 +17,8 @@ public class ZonePathGenerator
     public List<Vector2Int> branchSpawnPoints;
     public List<Vector2Int> edgeCandidates;
 
+    public List<Vector2Int> builtPath = new List<Vector2Int>();
+
     public ZonePathGenerator(Grid grid, Vector2Int ending, Vector2Int starting, Side facingSide, Vector2Int worldOffset, HashSet<Vector2Int> globalWalls)
     {
         this.gridInstance = grid;
@@ -57,11 +59,13 @@ public class ZonePathGenerator
 
     private bool RunGeneration()
     {
+        builtPath.Clear();
         Vector2Int currentPos = startingPos;
 
         Tile startTile = gridInstance.gridArray[currentPos.x, currentPos.y];
         startTile.type = TileType.Path;
         gridInstance.gridArray[currentPos.x, currentPos.y] = startTile;
+        builtPath.Add(currentPos);
 
         int stepLimit = gridInstance.gridWidth * gridInstance.gridHeight * 10;
 
@@ -79,17 +83,17 @@ public class ZonePathGenerator
                 Tile endTile = gridInstance.gridArray[nextPos.x, nextPos.y];
                 endTile.type = TileType.Path;
                 gridInstance.gridArray[nextPos.x, nextPos.y] = endTile;
+                builtPath.Add(nextPos);
                 return true;
             }
 
             if (!IsInsideGrid(nextPos) || IsWall(nextPos))
-            {
                 return false;
-            }
 
             Tile tile = gridInstance.gridArray[nextPos.x, nextPos.y];
             tile.type = TileType.Path;
             gridInstance.gridArray[nextPos.x, nextPos.y] = tile;
+            builtPath.Add(nextPos);
 
             currentPos = nextPos;
         }

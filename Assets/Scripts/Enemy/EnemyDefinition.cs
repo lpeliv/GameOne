@@ -30,6 +30,11 @@ public class EnemyDefinition : ScriptableObject
     [Header("Health")]
     public float baseHealth = 100f;
 
+    [Header("Attack")]
+    public float baseDamage = 10f;
+    public float baseAttackRate = 1f;
+    public float baseAttackRange = 2f;
+
     public float RollSize() => Random.Range(minSize, maxSize);
 
     public float DeriveSpeed(float size)

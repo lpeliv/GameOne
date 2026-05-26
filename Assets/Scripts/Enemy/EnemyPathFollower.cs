@@ -13,11 +13,14 @@ public class EnemyPathFollower : MonoBehaviour
     private Vector3 fixedOffset;
     private int currentWaypointIndex;
     private float segmentProgress;
-    private bool isMoving;
-    private bool hasArrived;
 
-    public bool IsMoving => isMoving;
-    public bool HasArrived => hasArrived;
+    private EnemyState currentState = EnemyState.Idle;
+    public EnemyState CurrentState => currentState;
+
+    public bool IsMoving => currentState == EnemyState.Moving;
+    public bool HasArrived => currentState == EnemyState.SeekingBud ||
+                              currentState == EnemyState.AttackingBud;
+    public bool IsDead => currentState == EnemyState.Dead;
 
     private float rolledSize;
     private float derivedSpeed;
@@ -25,13 +28,27 @@ public class EnemyPathFollower : MonoBehaviour
     private float weight;
     public float Weight => weight;
 
-    private bool isDead;
-    public bool IsDead => isDead;
+    private float damage;
+    private float attackRate;
+    private float attackRange;
+    private float attackTimer;
+
+    public float AttackRange => attackRange;
+
+    private HealthBudManager healthBudManager;
+    private HealthBud currentTargetBud;
+
+    private Rigidbody rb;
+
+    private Vector3 claimedAttackPosition;
+    private bool hasClaimedPosition;
 
     public void Die()
     {
-        isDead = true;
-        isMoving = false;
+        if (hasClaimedPosition && currentTargetBud != null)
+            healthBudManager?.ReleaseAttackPosition(currentTargetBud, claimedAttackPosition);
+
+        currentState = EnemyState.Dead;
         Destroy(gameObject);
     }
 
@@ -45,30 +62,119 @@ public class EnemyPathFollower : MonoBehaviour
         );
         currentWaypointIndex = 0;
         segmentProgress = 0f;
-        isMoving = false;
-        hasArrived = false;
+        currentState = EnemyState.Idle;
     }
 
     public void StartMoving()
     {
         if (path == null)
         {
-            Debug.LogWarning("[EnemyPathFollower] No path assigned. Call SetPath first.");
+            Debug.LogWarning("[EnemyPathFollower] No path assigned.");
             return;
         }
-        isMoving = true;
+        currentState = EnemyState.Moving;
     }
 
     public void StopMoving()
     {
-        isMoving = false;
+        currentState = EnemyState.Idle;
     }
 
-    private void Update()
+    private void FixedUpdate()
     {
-        if (!isMoving || hasArrived) return;
+        switch (currentState)
+        {
+            case EnemyState.Moving:
+                FollowPath();
+                break;
+            case EnemyState.SeekingBud:
+                SeekBud();
+                break;
+            case EnemyState.AttackingBud:
+                AttackBud();
+                break;
+        }
+    }
 
-        FollowPath();
+    private void SeekBud()
+    {
+        if (healthBudManager == null) return;
+
+        if (currentTargetBud == null || currentTargetBud.IsDestroyed)
+        {
+            if (hasClaimedPosition && currentTargetBud != null)
+            {
+                healthBudManager.ReleaseAttackPosition(currentTargetBud, claimedAttackPosition);
+                hasClaimedPosition = false;
+            }
+
+            currentTargetBud = healthBudManager.GetClosestBud(transform.position);
+            if (currentTargetBud == null) return;
+        }
+
+        if (!hasClaimedPosition)
+        {
+            claimedAttackPosition = healthBudManager.ClaimAttackPosition(currentTargetBud, attackRange);
+            hasClaimedPosition = true;
+        }
+
+        Vector3 direction = claimedAttackPosition - transform.position;
+        float distance = direction.magnitude;
+
+        if (direction.sqrMagnitude > 0.001f)
+        {
+            float targetAngle = Mathf.Atan2(direction.x, direction.z) * Mathf.Rad2Deg;
+            float angle = Mathf.LerpAngle(
+                transform.eulerAngles.y,
+                targetAngle,
+                rotationSpeed * Time.deltaTime
+            );
+            transform.eulerAngles = new Vector3(0f, angle, 0f);
+        }
+
+        if (distance <= 1f)
+        {
+            currentState = EnemyState.AttackingBud;
+            attackTimer = 0f;
+            return;
+        }
+
+        rb.MovePosition(transform.position + direction.normalized * derivedSpeed * Time.deltaTime);
+    }
+
+    private void AttackBud()
+    {
+        rb.angularVelocity = Vector3.zero;
+        transform.eulerAngles = new Vector3(0f, transform.eulerAngles.y, 0f);
+
+        if (currentTargetBud == null || currentTargetBud.IsDestroyed)
+        {
+            if (hasClaimedPosition && currentTargetBud != null)
+            {
+                healthBudManager.ReleaseAttackPosition(currentTargetBud, claimedAttackPosition);
+                hasClaimedPosition = false;
+            }
+            currentTargetBud = healthBudManager.GetClosestBud(transform.position);
+            if (currentTargetBud == null) return;
+            currentState = EnemyState.SeekingBud;
+            return;
+        }
+
+        float distToClaimed = Vector3.Distance(transform.position, claimedAttackPosition);
+
+        if (distToClaimed > attackRange * 2f)
+        {
+            currentState = EnemyState.SeekingBud;
+            return;
+        }
+
+        attackTimer += Time.deltaTime;
+
+        if (attackTimer >= 1f / attackRate)
+        {
+            attackTimer = 0f;
+            currentTargetBud.TakeDamage(damage);
+        }
     }
 
     private void FollowPath()
@@ -79,7 +185,14 @@ public class EnemyPathFollower : MonoBehaviour
             return;
         }
 
-        segmentProgress += moveSpeed * Time.deltaTime;
+        Vector3 p1 = path.GetWaypoint(currentWaypointIndex);
+        Vector3 p2 = path.GetWaypoint(Mathf.Min(currentWaypointIndex + 1, path.Count - 1));
+        float segmentLength = Vector3.Distance(p1, p2);
+        float step = segmentLength > 0.001f ? derivedSpeed * Time.deltaTime / segmentLength : 0f;
+
+        segmentProgress += step;
+
+        //segmentProgress += moveSpeed * Time.deltaTime;
 
         Vector3 position = EvaluateCatmullRom(
             currentWaypointIndex,
@@ -97,7 +210,7 @@ public class EnemyPathFollower : MonoBehaviour
             );
         }
 
-        transform.position = position;
+        rb.MovePosition(position);
 
         if (segmentProgress >= 1f)
         {
@@ -142,17 +255,24 @@ public class EnemyPathFollower : MonoBehaviour
 
     private void OnArrived()
     {
-        isMoving = false;
-        hasArrived = true;
-        transform.position = path.GetWaypoint(path.Count - 1) + fixedOffset;
+        currentState = EnemyState.SeekingBud;
+        currentTargetBud = healthBudManager?.GetClosestBud(transform.position);
+        transform.position = path.GetWaypoint(path.Count - 1);
     }
 
     public void Initialize(EnemyDefinition definition, float statMultiplier = 1f)
     {
+        rb = GetComponent<Rigidbody>();
+        if (rb != null)
+            rb.mass = rolledSize * statMultiplier;
         rolledSize = definition.RollSize() * statMultiplier;
         derivedSpeed = definition.DeriveSpeed(rolledSize) * statMultiplier;
         moveSpeed = derivedSpeed;
         weight = definition.weight * statMultiplier;
+
+        damage = definition.baseDamage * statMultiplier * rolledSize;
+        attackRate = definition.baseAttackRate / (rolledSize * statMultiplier);
+        attackRange = definition.baseAttackRange;
 
         transform.localScale = Vector3.one * rolledSize;
 
@@ -162,4 +282,10 @@ public class EnemyPathFollower : MonoBehaviour
         else
             Debug.LogWarning("[EnemyPathFollower] No EnemyHealth component found on enemy prefab.");
     }
+
+    public void SetHealthBudManager(HealthBudManager manager)
+    {
+        healthBudManager = manager;
+    }
+
 }

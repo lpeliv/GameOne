@@ -72,13 +72,15 @@ public class TargetManager : MonoBehaviour
         {
             for (int x = 0; x <= targetGrid.gridWidth; x++)
             {
-                Gizmos.DrawLine(new Vector3(worldOffset.x + x, 0, worldOffset.y), 
-                    new Vector3(worldOffset.x + x, 0, worldOffset.y + targetGrid.gridHeight));
+                Gizmos.DrawLine(
+                    new Vector3((worldOffset.x + x) * MasterManager.TileScale, 0, worldOffset.y * MasterManager.TileScale),
+                    new Vector3((worldOffset.x + x) * MasterManager.TileScale, 0, (worldOffset.y + targetGrid.gridHeight) * MasterManager.TileScale));
             }
             for (int z = 0; z <= targetGrid.gridHeight; z++)
             {
-                Gizmos.DrawLine(new Vector3(worldOffset.x, 0, worldOffset.y + z), 
-                    new Vector3(worldOffset.x + targetGrid.gridWidth, 0, worldOffset.y + z));
+                Gizmos.DrawLine(
+                    new Vector3(worldOffset.x * MasterManager.TileScale, 0, (worldOffset.y + z) * MasterManager.TileScale),
+                    new Vector3((worldOffset.x + targetGrid.gridWidth) * MasterManager.TileScale, 0, (worldOffset.y + z) * MasterManager.TileScale));
             }
 
             for (int x = 0; x < targetGrid.gridWidth; x++)
@@ -107,7 +109,7 @@ public class TargetManager : MonoBehaviour
                     {
                         Gizmos.color = Color.magenta;
                     }
-                    Gizmos.DrawCube(center, new Vector3(0.9f, 0.01f, 0.9f));
+                    Gizmos.DrawCube(center, new Vector3(0.9f, 0.01f, 0.9f) * MasterManager.TileScale);
                 }
             }
 
@@ -116,8 +118,11 @@ public class TargetManager : MonoBehaviour
                 Gizmos.color = new Color(1f, 0.5f, 0f);
                 foreach (Vector2Int budPos in healthBudPositions)
                 {
-                    Vector3 center = new Vector3(worldOffset.x + budPos.x + 0.5f, 0, worldOffset.y + budPos.y + 0.5f);
-                    Gizmos.DrawCube(center, new Vector3(0.9f, 0.01f, 0.9f));
+                    Vector3 center = new Vector3(
+                        (worldOffset.x + budPos.x + 0.5f) * MasterManager.TileScale,
+                        0,
+                        (worldOffset.y + budPos.y + 0.5f) * MasterManager.TileScale);
+                    Gizmos.DrawCube(center, new Vector3(0.9f, 0.01f, 0.9f) * MasterManager.TileScale);
                 }
             }
 
@@ -126,8 +131,11 @@ public class TargetManager : MonoBehaviour
                 Gizmos.color = new Color(0f, 0f, 0f);
                 foreach (Vector2Int xLine in wallTiles)
                 {
-                    Vector3 center = new Vector3(worldOffset.x + xLine.x + 0.5f, 0, worldOffset.y + xLine.y + 0.5f);
-                    Gizmos.DrawCube(center, new Vector3(0.9f, 0.01f, 0.9f));
+                    Vector3 center = new Vector3(
+                        (worldOffset.x + xLine.x + 0.5f) * MasterManager.TileScale,
+                        0,
+                        (worldOffset.y + xLine.y + 0.5f) * MasterManager.TileScale);
+                    Gizmos.DrawCube(center, new Vector3(0.9f, 0.01f, 0.9f) * MasterManager.TileScale);
                 }
             }
 
@@ -136,8 +144,11 @@ public class TargetManager : MonoBehaviour
                 Gizmos.color = new Color(0.4f, 0.3f, 0.6f);
                 foreach (Vector2Int area in houseTiles)
                 {
-                    Vector3 center = new Vector3(worldOffset.x + area.x + 0.5f, 0, worldOffset.y + area.y + 0.5f);
-                    Gizmos.DrawCube(center, new Vector3(0.9f, 0.01f, 0.9f));
+                    Vector3 center = new Vector3(
+                        (worldOffset.x + area.x + 0.5f) * MasterManager.TileScale,
+                        0,
+                        (worldOffset.y + area.y + 0.5f) * MasterManager.TileScale);
+                    Gizmos.DrawCube(center, new Vector3(0.9f, 0.01f, 0.9f) * MasterManager.TileScale);
                 }
             }
         }

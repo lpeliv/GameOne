@@ -36,6 +36,8 @@ public class PlayerController : MonoBehaviour
     private bool sprintHeld;
     private bool crouchHeld;
 
+    public static bool LookLocked = false;
+
     private void Awake()
     {
         controller = GetComponent<CharacterController>();
@@ -79,7 +81,6 @@ public class PlayerController : MonoBehaviour
         ApplyGravity();
     }
 
-    // State machine
     private void UpdateState()
     {
         bool grounded = controller.isGrounded;
@@ -118,10 +119,9 @@ public class PlayerController : MonoBehaviour
         currentState = PlayerState.Idle;
     }
 
-    // Look
-
     private void HandleLook()
     {
+        if (LookLocked) return;
         float horizontalRotation = lookInput.x * mouseSensitivity;
         transform.Rotate(Vector3.up, horizontalRotation);
 
@@ -130,7 +130,6 @@ public class PlayerController : MonoBehaviour
         cameraRoot.localRotation = Quaternion.Euler(verticalRotation, 0f, 0f);
     }
     
-    // Movement
     private void HandleMovement()
     {
         float speed = currentState switch
@@ -158,7 +157,6 @@ public class PlayerController : MonoBehaviour
         }
     }
 
-    // Gravity and Jump
     private void ApplyGravity()
     {
         if(controller.isGrounded && velocity.y < 0)

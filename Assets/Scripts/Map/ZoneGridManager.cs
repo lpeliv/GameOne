@@ -24,9 +24,6 @@ public class ZoneGridManager : MonoBehaviour
     [SerializeField] private int obstacleMinSpacing = 3;
     [SerializeField] public ObstacleCatalogue obstacleCatalogue;
 
-    //[Header("Spawner Settings")]
-    //[SerializeField] private int spawnerMinDistanceFromEnd = 6;
-
     public SpawnerPlacer spawnerPlacer;
     public ObstaclePlacer obstaclePlacer;
     public EnemyPath enemyPath;
@@ -254,18 +251,18 @@ public class ZoneGridManager : MonoBehaviour
 
     private void SetStartingPos()
     {
+        Debug.Log($"[ZoneGridManager] SetStartingPos called. FacingSide: {facingSide}, GridSize: {gridInstance.gridWidth}x{gridInstance.gridHeight}");
+
         startingPos = facingSide switch
         {
             Side.Bottom => new Vector2Int(1, gridInstance.gridHeight / 2),
-            Side.Top => new Vector2Int(gridInstance.gridWidth - 2, gridInstance.gridHeight /2),
+            Side.Top => new Vector2Int(gridInstance.gridWidth - 2, gridInstance.gridHeight / 2),
             Side.Right => new Vector2Int(gridInstance.gridWidth / 2, 1),
             Side.Left => new Vector2Int(gridInstance.gridWidth / 2, gridInstance.gridHeight - 2),
             _ => Vector2Int.zero
         };
 
-        Tile tile = gridInstance.gridArray[startingPos.x, startingPos.y];
-        tile.type = TileType.Path;
-        gridInstance.gridArray[startingPos.x, startingPos.y] = tile;
+        Debug.Log($"[ZoneGridManager] StartingPos set to: {startingPos}");
     }
 
     public void GeneratePath(HashSet<Vector2Int> globalWalls, int branchCount, int minSpacing, int endpointExclusion)
@@ -293,7 +290,7 @@ public class ZoneGridManager : MonoBehaviour
     public void BuildPath()
     {
         EnemyPathBuilder builder = new EnemyPathBuilder(gridInstance, worldOffset, facingSide);
-        enemyPath = builder.Build(startingPos, endingPos);
+        enemyPath = builder.Build(pathGenerator.builtPath);
     }
 
     public ZoneGridData GetSaveData()
@@ -311,7 +308,8 @@ public class ZoneGridManager : MonoBehaviour
         data.tiles = new List<TileData>();
         data.obstacles = obstaclePlacer?.placedObstacles ?? new List<ObstaclePlacementData>();
         data.spawners = spawnerPlacer?.placedSpawners ?? new List<SpawnerData>();
-        
+
+        data.mainPathTiles = pathGenerator.builtPath ?? new List<Vector2Int>();
 
         for (int x = 0; x < gridInstance.gridWidth; x++)
             for (int z = 0; z < gridInstance.gridHeight; z++)
@@ -322,6 +320,7 @@ public class ZoneGridManager : MonoBehaviour
                 tile.tileType = gridInstance.gridArray[x, z].type;
                 data.tiles.Add(tile);
             }
+
 
         return data;
     }
@@ -350,6 +349,8 @@ public class ZoneGridManager : MonoBehaviour
 
         pathGenerator = new ZonePathGenerator(gridInstance, endingPos, startingPos, facingSide, worldOffset, null);
         pathGenerator.spawnPoints = data.spawnpoints;
+
+        pathGenerator.builtPath = data.mainPathTiles ?? new List<Vector2Int>();
 
         branchGenerator = new BranchGenerator(gridInstance, endingPos, startingPos, facingSide, worldOffset, null);
         branchGenerator.branchSpawnPoints = data.branchSpawnPoints ?? new List<Vector2Int>();

@@ -38,6 +38,7 @@ public class WaveManager : MonoBehaviour
 
     private List<EnemySpawner> activeSpawners = new List<EnemySpawner>();
     [SerializeField] private BranchObstacleManager branchObstacleManager;
+    [SerializeField] private HealthBudManager healthBudManager;
 
     [Header("Testing")]
     [SerializeField] private KeyCode startWaveKey = KeyCode.L;
@@ -304,6 +305,7 @@ public class WaveManager : MonoBehaviour
 
         follower.SetPath(zoneGrid.enemyPath);
         follower.Initialize(definition, statMultiplier);
+        follower.SetHealthBudManager(healthBudManager);
         follower.StartMoving();
 
         aliveEnemies.Add(follower);

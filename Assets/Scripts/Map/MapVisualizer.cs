@@ -125,9 +125,8 @@ public class MapVisualizer : MonoBehaviour
                     0.2f,
                     (worldOffset.y + budPos.y + 0.5f) * MasterManager.TileScale
                 );
-            Quaternion rotation = Quaternion.Euler(45f, 45f, 0f);
+            Quaternion rotation = Quaternion.Euler(0f, 0f, 0f);
             GameObject bud = Instantiate(healthBudPrefab, worldPos, rotation, transform);
-            bud.transform.localScale = new Vector3(0.1f, 0.1f, 0.1f);
         }
     }
 
@@ -143,6 +142,7 @@ public class MapVisualizer : MonoBehaviour
 
             if (mf == null || mr == null) continue;
             if (mr.sharedMaterial == healthBudMaterial) continue;
+            if (child.GetComponent<BuildableTile>() != null) continue;
 
             originals.Add(child.gameObject);
             Material mat = mr.sharedMaterial;

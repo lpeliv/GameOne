@@ -14,17 +14,15 @@ public class MasterManager : MonoBehaviour
     [SerializeField] private MapVisualizer bottomVisualizer;
     [SerializeField] private MapVisualizer leftVisualizer;
     [SerializeField] private MapVisualizer rightVisualizer;
-
     [SerializeField] private int zoneDepth;
-
     [SerializeField] private int branchCount = 3;
     [SerializeField] private int branchSpawnerMinSpacing = 8;
     [SerializeField] private int branchEndpointExclusion = 10;
-
     [SerializeField] private ObstacleManager obstacleManager;
     [SerializeField] private WallManager wallManager;
     [SerializeField] private SpawnerManager spawnerManager;
     [SerializeField] private BranchObstacleManager branchObstacleManager;
+    [SerializeField] private HealthBudManager healthBudManager;
 
     private HashSet<Vector2Int> globalWallPositions;
 
@@ -96,6 +94,8 @@ public class MasterManager : MonoBehaviour
         branchObstacleManager.PlaceObstacles(leftGrid, Side.Left);
         branchObstacleManager.PlaceObstacles(rightGrid, Side.Right);
 
+        RegisterHealthBuds();
+
         Visualise();
 #endif
     }
@@ -159,6 +159,8 @@ public class MasterManager : MonoBehaviour
         branchObstacleManager.PlaceObstacles(bottomGrid, Side.Bottom);
         branchObstacleManager.PlaceObstacles(leftGrid, Side.Left);
         branchObstacleManager.PlaceObstacles(rightGrid, Side.Right);
+
+        RegisterHealthBuds();
     }
 
     private void Visualise()
@@ -199,5 +201,19 @@ public class MasterManager : MonoBehaviour
 
         foreach (Vector2Int b in targetManager.BorderPositions())
             globalWallPositions.Add(b);
+    }
+
+    private void RegisterHealthBuds()
+    {
+        List<HealthBud> buds = new List<HealthBud>();
+
+        foreach (Transform child in targetVisualizer.transform)
+        {
+            HealthBud bud = child.GetComponent<HealthBud>();
+            if (bud != null)
+                buds.Add(bud);
+        }
+
+        healthBudManager.RegisterBuds(buds);
     }
 }

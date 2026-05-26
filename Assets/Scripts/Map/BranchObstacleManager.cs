@@ -74,7 +74,6 @@ public class BranchObstacleManager : MonoBehaviour
             obstaclesByZone[side].Add(obstacle);
         }
 
-        Debug.Log($"[BranchObstacleManager] Placed {mergeTiles.Count} branch obstacles for zone {side}.");
     }
 
     public BranchObstacle GetObstacleForBranch(Side side, int branchIndex)

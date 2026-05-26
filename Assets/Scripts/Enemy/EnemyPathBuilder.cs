@@ -14,34 +14,21 @@ public class EnemyPathBuilder
         this.zone = zone;
     }
 
-    public EnemyPath Build(Vector2Int startingPos, Vector2Int endingPos)
+    public EnemyPath Build(List<Vector2Int> mainPathTiles)
     {
         List<Vector3> waypoints = new List<Vector3>();
-        HashSet<Vector2Int> visited = new HashSet<Vector2Int>();
 
-        Vector2Int current = startingPos;
-        visited.Add(current);
-        waypoints.Add(ToWorldPos(current));
-
-        while (current != endingPos)
-        {
-            Vector2Int? next = GetNextTile(current, visited, endingPos);
-
-            if (next == null)
-            {
-                break;
-            }
-
-            current = next.Value;
-            visited.Add(current);
-            waypoints.Add(ToWorldPos(current));
-        }
+        foreach (Vector2Int tile in mainPathTiles)
+            waypoints.Add(ToWorldPos(tile));
 
         return new EnemyPath(waypoints, zone);
     }
 
     private Vector2Int? GetNextTile(Vector2Int current, HashSet<Vector2Int> visited, Vector2Int endingPos)
     {
+        Vector2Int? best = null;
+        int bestDist = int.MaxValue;
+
         foreach (Vector2Int dir in cardinals)
         {
             Vector2Int neighbour = current + dir;
@@ -50,12 +37,19 @@ public class EnemyPathBuilder
             if (visited.Contains(neighbour)) continue;
 
             TileType type = gridInstance.gridArray[neighbour.x, neighbour.y].type;
+            if (type != TileType.Path && type != TileType.Spawner) continue;
 
-            if (type == TileType.Path || type == TileType.Spawner)
-                return neighbour;
+            int dist = Mathf.Abs(neighbour.x - endingPos.x) +
+                       Mathf.Abs(neighbour.y - endingPos.y);
+
+            if (dist < bestDist)
+            {
+                bestDist = dist;
+                best = neighbour;
+            }
         }
 
-        return null;
+        return best;
     }
 
     private Vector3 ToWorldPos(Vector2Int gridPos) => new Vector3(
