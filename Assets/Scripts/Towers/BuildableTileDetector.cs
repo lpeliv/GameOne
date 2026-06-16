@@ -33,7 +33,6 @@ public class BuildableTileDetector : MonoBehaviour
     private void ToggleBuildMode()
     {
         buildModeActive = !buildModeActive;
-        Debug.Log($"[BuildableTileDetector] Build mode: {buildModeActive}");
 
         if (!buildModeActive)
         {
@@ -57,8 +56,12 @@ public class BuildableTileDetector : MonoBehaviour
                 currentDetectedTile = tile;
                 bool canBuild = towerManager.CanBuildAt(tile);
                 currentDetectedTile.Highlight(canBuild);
-                towerManager.RequestBuild(tile);
-                buildPromptUI.Show(tile, canBuild);
+
+                if (canBuild)
+                {
+                    towerManager.RequestBuild(tile);
+                    buildPromptUI.Show(tile, canBuild);
+                }
             }
         }
         else

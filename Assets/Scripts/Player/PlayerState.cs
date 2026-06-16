@@ -6,5 +6,6 @@ public enum PlayerState
     Sprinting,
     Crouching,
     Jumping,
-    Falling
+    Falling,
+    Attacking,
 }

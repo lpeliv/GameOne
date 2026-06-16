@@ -34,6 +34,9 @@ public class EnemyPathFollower : MonoBehaviour
     private float attackTimer;
 
     public float AttackRange => attackRange;
+    public int WaypointIndex => currentWaypointIndex;
+    private Vector3 velocity;
+    public Vector3 Velocity => velocity;
 
     private HealthBudManager healthBudManager;
     private HealthBud currentTargetBud;
@@ -48,6 +51,7 @@ public class EnemyPathFollower : MonoBehaviour
         if (hasClaimedPosition && currentTargetBud != null)
             healthBudManager?.ReleaseAttackPosition(currentTargetBud, claimedAttackPosition);
 
+        EnemyRegistry.Instance?.Unregister(this);
         currentState = EnemyState.Dead;
         Destroy(gameObject);
     }
@@ -187,12 +191,16 @@ public class EnemyPathFollower : MonoBehaviour
 
         Vector3 p1 = path.GetWaypoint(currentWaypointIndex);
         Vector3 p2 = path.GetWaypoint(Mathf.Min(currentWaypointIndex + 1, path.Count - 1));
+        
+        Vector3 newPosition = EvaluateCatmullRom(currentWaypointIndex, segmentProgress) + fixedOffset;
+        velocity = (newPosition - transform.position) / Time.deltaTime;
+        rb.MovePosition(newPosition);
+        transform.position = newPosition;
+
         float segmentLength = Vector3.Distance(p1, p2);
         float step = segmentLength > 0.001f ? derivedSpeed * Time.deltaTime / segmentLength : 0f;
 
         segmentProgress += step;
-
-        //segmentProgress += moveSpeed * Time.deltaTime;
 
         Vector3 position = EvaluateCatmullRom(
             currentWaypointIndex,

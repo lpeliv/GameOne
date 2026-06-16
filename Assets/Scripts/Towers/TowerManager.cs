@@ -8,9 +8,13 @@ public class TowerManager : MonoBehaviour
     [SerializeField] private BuildPromptUI buildPromptUI;
 
     [Header("Turret")]
-    [SerializeField] private GameObject turretBasePrefab;
+    [SerializeField] private TurretDefinition turretDefinition;
 
     [SerializeField] private BuildableTileDetector tileDetector;
+    
+    [Header("Testing")]
+    [SerializeField] private AddonDefinition testAddonDefinition;
+    [SerializeField] private GameObject testAddonPrefab;
 
     private List<BuildableTile> occupiedTiles = new List<BuildableTile>();
     private BuildableTile pendingTile;
@@ -47,23 +51,46 @@ public class TowerManager : MonoBehaviour
 
     private void PlaceTurretBase(BuildableTile tile)
     {
-        if (turretBasePrefab == null)
+        Debug.Log("[TowerManager] PlaceTurretBase called.");
+
+        if (turretDefinition?.basePrefab == null)
         {
             Debug.LogWarning("[TowerManager] No turret base prefab assigned.");
             return;
         }
 
-        Vector3 spawnPos = new Vector3(
-            tile.transform.position.x,
-            tile.transform.position.y,
-            tile.transform.position.z
-        );
+        Vector3 spawnPos = tile.transform.position;
+        GameObject turretGO = Instantiate(turretDefinition.basePrefab, spawnPos, Quaternion.identity);
+        Debug.Log($"[TowerManager] Instantiated: {turretGO != null}, Name: {turretGO?.name}");
+        TurretBase turretBase = turretGO.GetComponent<TurretBase>();
+        Debug.Log($"[TowerManager] TurretBase component found: {turretBase != null}");
 
-        GameObject turret = Instantiate(turretBasePrefab, spawnPos, Quaternion.identity);
+        if (turretBase == null)
+        {
+            Debug.LogWarning("[TowerManager] Turret base prefab missing TurretBase component.");
+            Destroy(turretGO);
+            return;
+        }
+
+        turretBase.Initialize(turretDefinition);
         tile.SetOccupied(true);
         occupiedTiles.Add(tile);
 
         Debug.Log($"[TowerManager] Turret base placed at {spawnPos}.");
+
+        // Disabled test addon (addon definition)
+        //TurretCylinder firstCylinder = turretBase.GetCylinder(0);
+        //if (firstCylinder != null && testAddonDefinition != null && testAddonPrefab != null)
+        //{
+        //    GameObject addonGO = Instantiate(testAddonPrefab);
+        //    TurretAddon addon = addonGO.GetComponent<TurretAddon>();
+
+        //    if (addon != null)
+        //    {
+        //        addon.Initialize(testAddonDefinition);
+        //        firstCylinder.Joint.Attach(addon);
+        //    }
+        //}
     }
 
     public void RemoveTurret(BuildableTile tile)

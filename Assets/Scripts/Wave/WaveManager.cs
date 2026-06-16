@@ -11,12 +11,10 @@ public class WaveManager : MonoBehaviour
     [Header("Enemy")]
     [SerializeField] private EnemyDefinition miniBossDefinition;
 
-    // Wave state
     private int currentWaveIndex = 0;
     private bool waveActive = false;
     private bool obstacleRemovedThisCycle = false;
 
-    // Pool state
     private List<EnemyDefinition> remainingPool = new List<EnemyDefinition>();
     private List<EnemyPathFollower> aliveEnemies = new List<EnemyPathFollower>();
     private float currentWeightLimit;
@@ -26,11 +24,9 @@ public class WaveManager : MonoBehaviour
     private bool miniBossSpawned = false;
     private EnemyPathFollower currentMiniBoss;
 
-    // Charge state
     private int halfChargeCount = 0;
     private int obstacleRemoverCount = 0;
 
-    // Properties
     public bool WaveActive => waveActive;
     public int CurrentWaveIndex => currentWaveIndex;
     public int HalfChargeCount => halfChargeCount;
@@ -309,6 +305,7 @@ public class WaveManager : MonoBehaviour
         follower.StartMoving();
 
         aliveEnemies.Add(follower);
+        EnemyRegistry.Instance.Register(follower);
 
         EnemyHealth health = go.GetComponent<EnemyHealth>();
         if (health == null)

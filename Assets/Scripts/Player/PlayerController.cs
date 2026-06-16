@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using Unity.VisualScripting;
 using UnityEngine;
 
@@ -19,6 +20,22 @@ public class PlayerController : MonoBehaviour
     [SerializeField] private float mouseSensitivity = 0.2f;
     [SerializeField] private float verticalLookClamp = 85f;
     [SerializeField] private Transform cameraRoot;
+    [SerializeField] private AddonInteractionDetector addonInteractionDetector;
+
+    [Header("Hammer")]
+    [SerializeField] private Transform hammerRoot;
+    [SerializeField] private float hammerRange = 2f;
+    [SerializeField] private float swingDuration = 0.4f;
+    [SerializeField] private float swingAngle = 80f;
+    [SerializeField] private float hammerStrength = 1f;
+    [SerializeField] private float meleeDamage = 20f;
+    [SerializeField] private LayerMask hammerHitLayers;
+
+    private float swingTimer;
+    private bool isSwinging;
+    private Quaternion hammerRestRotation;
+    private HashSet<Collider> hitThisSwing = new HashSet<Collider>();
+    private PlayerState stateBeforeSwing;
 
     private CharacterController controller;
     private PlayerInputActions input;
@@ -60,11 +77,13 @@ public class PlayerController : MonoBehaviour
         input.Player.Look.performed += ctx => lookInput = ctx.ReadValue<Vector2>();
         input.Player.Look.canceled += ctx => lookInput = Vector2.zero;
 
+        input.Player.Attack.performed += ctx => TryStartSwing();
         input.Player.Jump.performed += ctx => jumpPressed = true;
         input.Player.Sprint.performed += ctx => sprintHeld = true;
         input.Player.Sprint.canceled += ctx => sprintHeld = false;
         input.Player.Crouch.performed += ctx => crouchHeld = true;
         input.Player.Crouch.canceled += ctx => crouchHeld = false;
+        input.Player.Interact.performed += ctx => addonInteractionDetector.TryInteract();
     }
 
     private void OnDisable()
@@ -78,6 +97,7 @@ public class PlayerController : MonoBehaviour
         HandleLook();
         HandleMovement();
         HandleCrouch();
+        HandleSwing();
         ApplyGravity();
     }
 
@@ -116,6 +136,12 @@ public class PlayerController : MonoBehaviour
             return;
         }
 
+        if (isSwinging)
+        {
+            currentState = PlayerState.Attacking;
+            return;
+        }
+
         currentState = PlayerState.Idle;
     }
 
@@ -136,6 +162,7 @@ public class PlayerController : MonoBehaviour
         {
             PlayerState.Sprinting => sprintSpeed,
             PlayerState.Crouching => crouchSpeed,
+            PlayerState.Attacking => walkSpeed * 0.5f,
             _ => walkSpeed
         };
 
@@ -174,4 +201,70 @@ public class PlayerController : MonoBehaviour
     }
 
     public PlayerState CurrentState => currentState;
+
+    private void TryStartSwing()
+    {
+        if (isSwinging) return;
+        if (currentState == PlayerState.Jumping ||
+            currentState == PlayerState.Falling) return;
+
+        stateBeforeSwing = currentState;
+        currentState = PlayerState.Attacking;
+        isSwinging = true;
+        swingTimer = 0f;
+        hitThisSwing.Clear();
+        hammerRestRotation = hammerRoot.localRotation;
+    }
+
+    private void HandleSwing()
+    {
+        if (!isSwinging) return;
+
+        swingTimer += Time.deltaTime;
+        float t = swingTimer / swingDuration;
+
+        float swingT = Mathf.Sin(t * Mathf.PI);
+        float currentAngle = swingAngle * swingT;
+
+        hammerRoot.localRotation = Quaternion.Euler(
+            hammerRestRotation.eulerAngles.x + currentAngle,
+            hammerRestRotation.eulerAngles.y,
+            hammerRestRotation.eulerAngles.z
+        );
+
+        if (t >= 0.3f && t <= 0.7f)
+            CheckHammerHits();
+
+        if (swingTimer >= swingDuration)
+        {
+            hammerRoot.localRotation = hammerRestRotation;
+            isSwinging = false;
+            currentState = stateBeforeSwing;
+            hitThisSwing.Clear();
+        }
+    }
+    
+    private void CheckHammerHits()
+    {
+        Ray ray = new Ray(cameraRoot.position, cameraRoot.forward);
+        RaycastHit hit;
+
+        if (!Physics.Raycast(ray, out hit, hammerRange, hammerHitLayers))
+            return;
+
+        Collider hitCollider = hit.collider;
+
+        if (hitThisSwing.Contains(hitCollider)) return;
+        hitThisSwing.Add(hitCollider);
+
+        IHammerHittable hittable = hitCollider.GetComponent<IHammerHittable>();
+        if (hittable != null)
+            hittable.OnHammerHit(hammerStrength);
+
+        EnemyHealth enemyHealth = hitCollider.GetComponent<EnemyHealth>();
+        if (enemyHealth != null)
+            enemyHealth.TakeDamage(meleeDamage);
+
+        Debug.Log($"[PlayerController] Hammer hit: {hitCollider.gameObject.name}");
+    }
 }

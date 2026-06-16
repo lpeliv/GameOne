@@ -1,30 +1,13 @@
 # Game One Update #04
 ### Petra Prototype
 
-##  Art / Visuals
-- Using placeholder assets for:
-  -  Obstacles
-  -  Path 
-  -  Health points
-  -  Walls
-  -  Player
-  -  Enemies
-
----
-
-## Audio
-- Not implemented yet
-
----
-
-**Date:** May 26, 2026
+**Date:** June 16, 2026
 
 ---
 
 ## What I Worked On
-- Added tower build mechanic
-- Enemies can now attack health buds at the end of the path.
-- A simple UI was added to represent the tower building feature
+- Improved tower building with a minigame
+- Turret's can now have sockets to handle multiple turrets for each turret level
 
 ---
 
@@ -33,24 +16,24 @@
 
 ---
 
-## Current Issues
+## Known Issues
 - Performance issues
-- Still using placeholders
 - Enemies attack all buds instead of only those from the specific zone
 ---
 
 ## Next Goals
-- Finish tower building/upgrade logic
+- Add interaction system between enemies and towers 
 - Improve enemy health display and add drop system
 - Introduce shop and upgrades
+- Introduce inventory system
 
 ---
 
 ## Screenshots / Media
 <div align="center">
 
-<img src="githubimages/image8.png" width="45%">
-<img src="githubimages/image9.png" width="45%">
-<img src="githubimages/image10.png" width="45%">
+<img src="githubimages/image11.png" width="45%">
+<img src="githubimages/image12.png" width="45%">
+<img src="githubimages/image13.png" width="45%">
 
 </div>
