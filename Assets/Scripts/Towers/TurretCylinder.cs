@@ -21,6 +21,7 @@ public class TurretCylinder : MonoBehaviour
 
     public void Initialize(float rotSpeed)
     {
+        Debug.Log($"[TurretCylinder] Initialize called with rotSpeed: {rotSpeed}");
         rotationSpeed = rotSpeed;
         queryTimer = 0f;
         isActive = true;
@@ -36,13 +37,24 @@ public class TurretCylinder : MonoBehaviour
 
     private void Update()
     {
-        if (!isActive || !HasAddon) return;
+        if (!isActive)
+        {
+            Debug.Log("[TurretCylinder] Not active.");
+            return;
+        }
+
+        if (!HasAddon)
+        {
+            Debug.Log("[TurretCylinder] No addon attached.");
+            return;
+        }
 
         queryTimer += Time.deltaTime;
         if (queryTimer >= queryInterval)
         {
             queryTimer = 0f;
             UpdateTarget();
+            Debug.Log($"[TurretCylinder] Target after update: {currentTarget?.name ?? "null"}");
         }
 
         if (currentTarget != null)
@@ -56,19 +68,32 @@ public class TurretCylinder : MonoBehaviour
 
     private void UpdateTarget()
     {
-        if (EnemyRegistry.Instance == null) return;
-        if (joint?.CurrentAddon == null) return;
+        if (EnemyRegistry.Instance == null)
+        {
+            Debug.LogWarning("[TurretCylinder] EnemyRegistry instance is null.");
+            return;
+        }
+
+        if (joint?.CurrentAddon == null)
+        {
+            Debug.LogWarning("[TurretCylinder] No addon on joint.");
+            return;
+        }
 
         float range = joint.CurrentAddon.Range;
+        Debug.Log($"[TurretCylinder] Searching for enemies in range: {range}");
 
-        currentTarget = targetingPriority switch
-        {
-            TargetingPriority.Closest => EnemyRegistry.Instance.GetClosestEnemy(transform.position, range),
-            TargetingPriority.FirstInLine => EnemyRegistry.Instance.GetFirstInLine(transform.position, range),
-            TargetingPriority.HighestHP => EnemyRegistry.Instance.GetHighestHP(transform.position, range),
-            TargetingPriority.LowestHP => EnemyRegistry.Instance.GetLowestHP(transform.position, range),
-            _ => null
-        };
+        currentTarget = EnemyRegistry.Instance.GetClosestEnemy(transform.position, range);
+        Debug.Log($"[TurretCylinder] Found target: {currentTarget?.name ?? "none"}");
+
+        //currentTarget = targetingPriority switch
+        //{
+        //    TargetingPriority.Closest => EnemyRegistry.Instance.GetClosestEnemy(transform.position, range),
+        //    TargetingPriority.FirstInLine => EnemyRegistry.Instance.GetFirstInLine(transform.position, range),
+        //    TargetingPriority.HighestHP => EnemyRegistry.Instance.GetHighestHP(transform.position, range),
+        //    TargetingPriority.LowestHP => EnemyRegistry.Instance.GetLowestHP(transform.position, range),
+        //    _ => null
+        //};
     }
 
     private void RotateTowardTarget()
@@ -81,8 +106,6 @@ public class TurretCylinder : MonoBehaviour
 
         Vector3 direction = currentTarget.transform.position - transform.position;
         direction.y = 0f;
-
-
 
         if (direction.sqrMagnitude < 0.001f) return;
 

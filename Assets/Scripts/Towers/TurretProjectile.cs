@@ -31,6 +31,7 @@ public class TurretProjectile : MonoBehaviour
         lifetimeTimer += Time.deltaTime;
         if (lifetimeTimer >= maxLifetime)
         {
+            Debug.Log("[TurretProjectile] Lifetime expired, destroying.");
             Destroy(gameObject);
             return;
         }
@@ -41,21 +42,24 @@ public class TurretProjectile : MonoBehaviour
         float distToTarget = Vector3.Distance(transform.position, targetPoint);
         if (distToTarget < 0.5f)
         {
-            Destroy(gameObject);
         }
     }
 
     private void OnTriggerEnter(Collider other)
     {
+        Debug.Log($"[TurretProjectile] OnTriggerEnter fired: {other.gameObject.name}, hasHit: {hasHit}");
+
         if (hasHit) return;
 
         EnemyHealth health = other.GetComponent<EnemyHealth>();
-        if (health == null) return;
+        if (health == null)
+        {
+            return;
+        }
 
         hasHit = true;
         health.TakeDamage(damage);
-        Debug.Log($"[TurretProjectile] Hit enemy for {damage} damage.");
-
+        
         Destroy(gameObject);
     }
 }

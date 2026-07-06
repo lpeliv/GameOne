@@ -23,6 +23,8 @@ public class EnemyHealth : MonoBehaviour
 
     public void TakeDamage(float amount)
     {
+        Debug.Log($"[EnemyHealth] TakeDamage called. Amount: {amount}, CurrentHealth before: {currentHealth}, IsDead: {isDead}");
+
         if (isDead) return;
 
         currentHealth = Mathf.Max(0f, currentHealth - amount);

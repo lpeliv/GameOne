@@ -97,11 +97,12 @@ public class TurretBase : MonoBehaviour
 
     private void OnAllConstructionComplete()
     {
+        Debug.Log($"[TurretBase] OnAllConstructionComplete called. Cylinder count: {cylinders.Count}");
+
         foreach (TurretCylinder cylinder in cylinders)
             cylinder.Initialize(definition.rotationSpeed);
 
         SetBuildState(TurretBuildState.Built);
-        Debug.Log("[TurretBase] All construction complete, turret active.");
     }
 
     public void TakeDamage(float amount)

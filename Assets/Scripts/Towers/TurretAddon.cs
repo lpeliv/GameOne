@@ -18,6 +18,16 @@ public class TurretAddon : MonoBehaviour
     public int CurrentTier => currentTier;
     public bool IsAttached => isAttached;
 
+    [SerializeField] private AddonDefinition addonDefinition;
+
+    private void Awake()
+    {
+        if (addonDefinition != null)
+            Initialize(addonDefinition);
+        else
+            Debug.LogWarning("[TurretAddon] No AddonDefinition assigned in inspector.");
+    }
+
     public void Initialize(AddonDefinition def)
     {
         definition = def;
