@@ -31,6 +31,11 @@ public class PlayerController : MonoBehaviour
     [SerializeField] private float meleeDamage = 20f;
     [SerializeField] private LayerMask hammerHitLayers;
 
+    [Header("Alt Attack")]
+    [SerializeField] private float altAttackDamage = 10000f;
+    [SerializeField] private float altAttackRange = 30f;
+
+    public static bool InputLocked = false;
     private float swingTimer;
     private bool isSwinging;
     private Quaternion hammerRestRotation;
@@ -83,6 +88,7 @@ public class PlayerController : MonoBehaviour
         input.Player.Sprint.canceled += ctx => sprintHeld = false;
         input.Player.Crouch.performed += ctx => crouchHeld = true;
         input.Player.Crouch.canceled += ctx => crouchHeld = false;
+        input.Player.AltAttack.performed += ctx => TryAltAttack();
         input.Player.Interact.performed += ctx => addonInteractionDetector.TryInteract();
     }
 
@@ -93,6 +99,13 @@ public class PlayerController : MonoBehaviour
 
     private void Update()
     {
+        if (InputLocked)
+        {
+            moveInput = Vector2.zero;
+            return;
+        }
+
+        moveInput = input.Player.Move.ReadValue<Vector2>();
         UpdateState();
         HandleLook();
         HandleMovement();
@@ -266,5 +279,18 @@ public class PlayerController : MonoBehaviour
             enemyHealth.TakeDamage(meleeDamage);
 
         Debug.Log($"[PlayerController] Hammer hit: {hitCollider.gameObject.name}");
+    }
+
+    private void TryAltAttack()
+    {
+        Ray ray = new Ray(cameraRoot.position, cameraRoot.forward);
+        RaycastHit hit;
+
+        if (!Physics.Raycast(ray, out hit, altAttackRange, hammerHitLayers)) return;
+
+        EnemyHealth health = hit.collider.GetComponentInParent<EnemyHealth>();
+        if (health == null) return;
+
+        health.TakeDamage(altAttackDamage);
     }
 }

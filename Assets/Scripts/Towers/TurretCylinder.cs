@@ -70,30 +70,18 @@ public class TurretCylinder : MonoBehaviour
     {
         if (EnemyRegistry.Instance == null)
         {
-            Debug.LogWarning("[TurretCylinder] EnemyRegistry instance is null.");
             return;
         }
 
         if (joint?.CurrentAddon == null)
         {
-            Debug.LogWarning("[TurretCylinder] No addon on joint.");
             return;
         }
 
         float range = joint.CurrentAddon.Range;
-        Debug.Log($"[TurretCylinder] Searching for enemies in range: {range}");
 
         currentTarget = EnemyRegistry.Instance.GetClosestEnemy(transform.position, range);
-        Debug.Log($"[TurretCylinder] Found target: {currentTarget?.name ?? "none"}");
 
-        //currentTarget = targetingPriority switch
-        //{
-        //    TargetingPriority.Closest => EnemyRegistry.Instance.GetClosestEnemy(transform.position, range),
-        //    TargetingPriority.FirstInLine => EnemyRegistry.Instance.GetFirstInLine(transform.position, range),
-        //    TargetingPriority.HighestHP => EnemyRegistry.Instance.GetHighestHP(transform.position, range),
-        //    TargetingPriority.LowestHP => EnemyRegistry.Instance.GetLowestHP(transform.position, range),
-        //    _ => null
-        //};
     }
 
     private void RotateTowardTarget()

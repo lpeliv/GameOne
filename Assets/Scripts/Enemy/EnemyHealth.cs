@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using UnityEngine;
 
 public class EnemyHealth : MonoBehaviour
@@ -39,6 +40,40 @@ public class EnemyHealth : MonoBehaviour
         if (isDead) return;
         isDead = true;
 
+        SpawnDrops();
         OnDeath?.Invoke(this);
+    }
+
+    private void SpawnDrops()
+    {
+        EnemyDefinition definition = GetComponent<EnemyPathFollower>()?.Definition;
+        if (definition == null) return;
+
+        List<DropEntry> drops = definition.dropTable.RollDrops();
+
+        foreach (DropEntry drop in drops)
+        {
+            if (drop.item?.worldPrefab == null) continue;
+
+            for (int i = 0; i < drop.quantity; i++)
+            {
+                Vector3 spawnPos = transform.position + new Vector3(
+                UnityEngine.Random.Range(-1f, 1f),
+                0f,
+                UnityEngine.Random.Range(-1f, 1f)
+            );
+
+                GameObject go = Instantiate(drop.item.worldPrefab, spawnPos, Quaternion.identity);
+                WorldDrop world = go.GetComponent<WorldDrop>();
+
+                if (world == null)
+                {
+                    Debug.LogWarning("[EnemyHealth] WorldDrop component missing on item prefab.");
+                    continue;
+                }
+
+                world.Initialize(drop.item, 1);
+            }
+        }
     }
 }

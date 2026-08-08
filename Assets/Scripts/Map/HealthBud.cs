@@ -5,6 +5,7 @@ public class HealthBud : MonoBehaviour
 {
     [SerializeField] private float maxHealth = 100f;
 
+    public Side zone;
     private float currentHealth;
     private bool isDestroyed;
 
@@ -44,5 +45,17 @@ public class HealthBud : MonoBehaviour
         isDestroyed = false;
         currentHealth = maxHealth;
         gameObject.SetActive(true);
+    }
+
+    public void SetHealth(float hp)
+    {
+        currentHealth = Mathf.Clamp(hp, 0f, maxHealth);
+    }
+
+    public void SetDestroyed()
+    {
+        isDestroyed = true;
+        currentHealth = 0f;
+        gameObject.SetActive(false);
     }
 }

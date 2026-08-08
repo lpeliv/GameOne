@@ -35,6 +35,14 @@ public class EnemyDefinition : ScriptableObject
     public float baseAttackRate = 1f;
     public float baseAttackRange = 2f;
 
+    [Header("Drops")]
+    public DropTable dropTable;
+
+    [Header("Behaviour")]
+    public EnemyBehaviour behaviour = EnemyBehaviour.TargetBuds;
+    public float detectionRange = 15f;
+    public float meleeRange = 2f;
+
     public float RollSize() => Random.Range(minSize, maxSize);
 
     public float DeriveSpeed(float size)

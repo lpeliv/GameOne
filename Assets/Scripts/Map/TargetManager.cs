@@ -176,14 +176,21 @@ public class TargetManager : MonoBehaviour
                 for (int x = 2; x < height - 2; x++)
                     borderTiles.Add(new Vector2Int(x, 0));
                 break;
-        }   
+        }
 
         for (int i = 0; i < healthBudCount; i++)
         {
             if (borderTiles.Count == 0) break;
             int index = Random.Range(0, borderTiles.Count);
-            healthBudPositions.Add(borderTiles[index]);
+            Vector2Int pos = borderTiles[index];
+            healthBudPositions.Add(pos);
             borderTiles.RemoveAt(index);
+
+            // Debug zone assignment
+            if (tileZones.TryGetValue(pos, out Side assignedZone))
+                Debug.Log($"[TargetManager] Bud at {pos} assigned to zone {assignedZone}, expected {side}");
+            else
+                Debug.LogWarning($"[TargetManager] Bud at {pos} NOT in tileZones!");
         }
     }
 
@@ -243,13 +250,19 @@ public class TargetManager : MonoBehaviour
 
     private Side GetSideZone(int x, int z, int N)
     {
-        if(z > x && z > (N - 1 - x))
-            return Side.Top;
-        else if (z < x && z < (N - 1 - x))
-            return Side.Bottom;
-        else if (z > x && z < (N - 1 - x))
-            return Side.Left;
-        else return Side.Right;
+        // Distance from each edge
+        int distLeft = x;
+        int distRight = width - 1 - x;
+        int distBottom = z;
+        int distTop = height - 1 - z;
+
+        // Assign to the nearest edge
+        int minDist = Mathf.Min(distLeft, distRight, distBottom, distTop);
+
+        if (minDist == distLeft) return Side.Left;
+        if (minDist == distRight) return Side.Right;
+        if (minDist == distBottom) return Side.Bottom;
+        return Side.Top;
     }
 
     public HashSet<Vector2Int> BorderPositions()

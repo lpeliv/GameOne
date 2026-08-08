@@ -4,6 +4,12 @@ using UnityEngine;
 
 public class HealthBudManager : MonoBehaviour
 {
+    [SerializeField] private Side zone;
+
+    private Side activeZone;
+    public Side Zone => zone;
+    public IReadOnlyList<HealthBud> GetAllBuds() => buds;
+
     private List<HealthBud> buds = new List<HealthBud>();
 
     public event Action OnAllBudsDestroyed;
@@ -28,6 +34,7 @@ public class HealthBudManager : MonoBehaviour
         foreach (HealthBud bud in buds)
         {
             if (bud == null || bud.IsDestroyed) continue;
+            if (bud.zone != activeZone) continue;
 
             float dist = Vector3.Distance(position, bud.transform.position);
             if (dist < minDist)
@@ -43,7 +50,7 @@ public class HealthBudManager : MonoBehaviour
     public bool AnyBudsAlive()
     {
         foreach (HealthBud bud in buds)
-            if (bud != null && !bud.IsDestroyed)
+            if (bud != null && !bud.IsDestroyed && bud.zone == activeZone)
                 return true;
         return false;
     }
@@ -52,7 +59,7 @@ public class HealthBudManager : MonoBehaviour
     {
         int count = 0;
         foreach (HealthBud bud in buds)
-            if (bud != null && !bud.IsDestroyed)
+            if (bud != null && !bud.IsDestroyed && bud.zone == activeZone)
                 count++;
         return count;
     }
@@ -60,12 +67,13 @@ public class HealthBudManager : MonoBehaviour
     private void HandleBudDestroyed(HealthBud bud)
     {
         bud.OnBudDestroyed -= HandleBudDestroyed;
-        ClearClaimedPositions(bud);
-        Debug.Log($"[HealthBudManager] Bud destroyed. Remaining: {AliveBudCount()}");
+        if (bud.zone != activeZone) return;
+        PlayerHealth.Instance?.OnBudDestroyed(activeZone);
+        Debug.Log($"[HealthBudManager] Active zone bud destroyed. Remaining: {AliveBudCount()}");
 
         if (!AnyBudsAlive())
         {
-            Debug.Log("[HealthBudManager] All buds destroyed.");
+            Debug.Log("[HealthBudManager] All active zone buds destroyed.");
             OnAllBudsDestroyed?.Invoke();
         }
     }
@@ -129,5 +137,48 @@ public class HealthBudManager : MonoBehaviour
     {
         if (claimedPositions.ContainsKey(bud))
             claimedPositions[bud].Clear();
+    }
+
+    public void SetActiveZone(Side zone)
+    {
+        activeZone = zone;
+    }
+
+    // Testing - should delete later
+
+    [Header("Testing")]
+    [SerializeField] private KeyCode destroyBudKey = KeyCode.Z;
+
+    private void Update()
+    {
+        if (Input.GetKeyDown(destroyBudKey))
+            DestroyRandomBud();
+    }
+
+    private void DestroyRandomBud()
+    {
+        foreach (HealthBud bud in buds)
+        {
+            if (bud != null && !bud.IsDestroyed)
+            {
+                bud.TakeDamage(bud.MaxHealth);
+                Debug.Log($"[HealthBudManager] Test destroyed a bud. Remaining: {AliveBudCount()}");
+                return;
+            }
+        }
+
+        Debug.LogWarning("[HealthBudManager] No buds left to destroy.");
+    }
+
+    // End testing 
+
+    public void ResubscribeBuds()
+    {
+        foreach (HealthBud bud in buds)
+        {
+            if (bud == null) continue;
+            bud.OnBudDestroyed -= HandleBudDestroyed;
+            bud.OnBudDestroyed += HandleBudDestroyed;
+        }
     }
 }

@@ -23,6 +23,8 @@ public class MasterManager : MonoBehaviour
     [SerializeField] private SpawnerManager spawnerManager;
     [SerializeField] private BranchObstacleManager branchObstacleManager;
     [SerializeField] private HealthBudManager healthBudManager;
+    [SerializeField] private PlayerHealth playerHealth;
+    [SerializeField] private WaveManager waveManager;
 
     private HashSet<Vector2Int> globalWallPositions;
 
@@ -160,6 +162,7 @@ public class MasterManager : MonoBehaviour
         branchObstacleManager.PlaceObstacles(leftGrid, Side.Left);
         branchObstacleManager.PlaceObstacles(rightGrid, Side.Right);
 
+        Visualise();
         RegisterHealthBuds();
     }
 
@@ -205,15 +208,41 @@ public class MasterManager : MonoBehaviour
 
     private void RegisterHealthBuds()
     {
-        List<HealthBud> buds = new List<HealthBud>();
+        //healthBudManager.OnAllBudsDestroyed -= OnGameOver;
+        //healthBudManager.OnAllBudsDestroyed += OnGameOver;
+
+        List<HealthBud> allBuds = new List<HealthBud>();
 
         foreach (Transform child in targetVisualizer.transform)
         {
             HealthBud bud = child.GetComponent<HealthBud>();
             if (bud != null)
-                buds.Add(bud);
+                allBuds.Add(bud);
         }
 
-        healthBudManager.RegisterBuds(buds);
+        // Debug zone distribution
+        Dictionary<Side, int> zoneCounts = new Dictionary<Side, int>();
+        foreach (HealthBud bud in allBuds)
+        {
+            if (!zoneCounts.ContainsKey(bud.zone))
+                zoneCounts[bud.zone] = 0;
+            zoneCounts[bud.zone]++;
+        }
+
+        foreach (var kvp in zoneCounts)
+            Debug.Log($"[MasterManager] Zone {kvp.Key}: {kvp.Value} buds");
+
+        Debug.Log($"[MasterManager] Active zone: {healthBudManager.Zone}");
+
+        healthBudManager.RegisterBuds(allBuds);
+        healthBudManager.SetActiveZone(healthBudManager.Zone);
+        healthBudManager.OnAllBudsDestroyed += OnGameOver;
+        playerHealth?.ResetForZone(healthBudManager.Zone, healthBudManager.AliveBudCount());
+    }
+    
+    private void OnGameOver()
+    {
+        Debug.Log("[MasterManager] Game over — all buds destroyed.");
+        GameOverUI.Instance?.Show();
     }
 }

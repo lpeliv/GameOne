@@ -15,7 +15,6 @@ public class MapVisualizer : MonoBehaviour
     [SerializeField] private GameObject healthBudPrefab;
     [SerializeField] private Material healthBudMaterial;
 
-
     private Dictionary<TileType, GameObject> prefabMap;
 
     private void Awake()
@@ -119,14 +118,28 @@ public class MapVisualizer : MonoBehaviour
 
         foreach (Vector2Int budPos in targetManager.healthBudPositions)
         {
-            Vector3 worldPos = new Vector3
-                (
-                    (worldOffset.x + budPos.x + 0.5f) * MasterManager.TileScale,
-                    0.2f,
-                    (worldOffset.y + budPos.y + 0.5f) * MasterManager.TileScale
-                );
+            Vector3 worldPos = new Vector3(
+                (worldOffset.x + budPos.x + 0.5f) * MasterManager.TileScale,
+                0.2f,
+                (worldOffset.y + budPos.y + 0.5f) * MasterManager.TileScale
+            );
+
             Quaternion rotation = Quaternion.Euler(0f, 0f, 0f);
-            GameObject bud = Instantiate(healthBudPrefab, worldPos, rotation, transform);
+            GameObject go = Instantiate(healthBudPrefab, worldPos, rotation, transform);
+            HealthBud bud = go.GetComponent<HealthBud>();
+
+            if (bud != null)
+            {
+                if (targetManager.TileZones.TryGetValue(budPos, out Side budZone))
+                {
+                    bud.zone = budZone;
+                    Debug.Log($"[MapVisualizer] Bud at {budPos} assigned zone {budZone}");
+                }
+                else
+                {
+                    Debug.LogWarning($"[MapVisualizer] Bud at {budPos} not found in TileZones");
+                }
+            }
         }
     }
 

@@ -1,42 +1,45 @@
-# Game One Update #05
+# Game One Update #06
 ### Petra Prototype
 
-**Date:** July 6, 2026
+**Date:** June 8, 2026
 
 ---
 
 ## What I Worked On
-- Turrets have an interaction with enemies - dealing damage and eliminating them
-- Player can hold turrets and place them on empty sockets
+- Enemies have different states - either path following or targeting and attacking a player
+- Enemies drop loot when eliminated
+- Player now has a visible healthbar, based on the health buds located at the base, depleting as they get destroyed by enemies
+- Game over screen was added, along with the condition that ends the game
+- In case of a game over, player can retry from the wave they failed, or leave the game
 
 ---
 
 ## Bugs Fixed
-- No major bug fixes yet
+- A bug with visualisation of the target area caused only 2 zones to appear instead of 4. This has been fixed
 
 ---
 
 ## Known Issues
 - Performance issues
 - Enemies attack all buds instead of only those from the specific zone
-- Player can't put the turret back in his inventory (because it doesn't exist yet)
+- Player can't put the turret back in his inventory
 
 ---
 
 ## Next Goals
-- Improve enemy health display and add drop system
+- Improve enemy health display
 - Introduce shop and upgrades
-- Introduce inventory system
-- Add an end game logic
 - Hammer repair minigame
+- Add first version of models
 
 ---
 
 ## Screenshots / Media
 <div align="center">
 
-<img src="githubimages/image14.png" width="45%">
-<img src="githubimages/image15.png" width="45%">
-<img src="githubimages/image16.png" width="45%">
+<img src="githubimages/image17.png" width="45%">
+<img src="githubimages/image18.png" width="45%">
+<img src="githubimages/image19.png" width="45%">
+<img src="githubimages/image20.png" width="45%">
 
 </div>

@@ -11,6 +11,9 @@ public class WaveManager : MonoBehaviour
     [Header("Enemy")]
     [SerializeField] private EnemyDefinition miniBossDefinition;
 
+    [Header("Player")]
+    [SerializeField] private PlayerHealth playerHealth;
+
     private int currentWaveIndex = 0;
     private bool waveActive = false;
     private bool obstacleRemovedThisCycle = false;
@@ -36,12 +39,15 @@ public class WaveManager : MonoBehaviour
     [SerializeField] private BranchObstacleManager branchObstacleManager;
     [SerializeField] private HealthBudManager healthBudManager;
 
-    [Header("Testing")]
-    [SerializeField] private KeyCode startWaveKey = KeyCode.L;
+    private WaveSnapshot currentSnapshot;
 
     [Header("Testing")]
+    [SerializeField] private KeyCode startWaveKey = KeyCode.L;
+    [SerializeField] private KeyCode endWaveKey = KeyCode.K;
     [SerializeField] private KeyCode removeObstacleKey = KeyCode.R;
     [SerializeField] private int testBranchIndex = 0;
+
+    private bool isGameOver = false;
 
     public bool CanStartNextWave() =>
         zoneDefinition.CanStartWave(currentWaveIndex, obstacleRemovedThisCycle);
@@ -100,6 +106,8 @@ public class WaveManager : MonoBehaviour
             Debug.LogWarning("[WaveManager] Cannot start wave — obstacle must be removed first.");
             return;
         }
+        
+        TakeSnapshot();
 
         WaveDefinition wave = zoneDefinition.GetWave(currentWaveIndex);
         if (wave == null)
@@ -179,8 +187,13 @@ public class WaveManager : MonoBehaviour
 
     private void Update()
     {
+        if (isGameOver) return;
+
         if (Input.GetKeyDown(startWaveKey) && !waveActive)
             TryStartWave();
+
+        if (Input.GetKeyDown(endWaveKey) && waveActive)
+            ForceEndWave();
 
         if (Input.GetKeyDown(removeObstacleKey))
             TryUseObstacleRemover(testBranchIndex);
@@ -372,5 +385,116 @@ public class WaveManager : MonoBehaviour
 
         Debug.Log($"[WaveManager] Branch {branchIndex} obstacle removed. Remainig removers: {obstacleRemoverCount}");
         return true;
+    }
+
+    public void ForceEndWave()
+    {
+        if (!waveActive) return;
+
+        foreach (EnemyPathFollower enemy in aliveEnemies.ToArray())
+            if (enemy != null)
+                Destroy(enemy.gameObject);
+
+        aliveEnemies.Clear();
+        remainingPool.Clear();
+        poolExhausted = true;
+        miniBossSpawned = true;
+        waveActive = false;
+
+        waveActive = false;
+        OnWaveComplete();
+
+        Debug.Log("[WaveManager] Wave force ended.");
+    }
+
+    public void TakeSnapshot()
+    {
+        currentSnapshot = new WaveSnapshot();
+        currentSnapshot.waveIndex = currentWaveIndex;
+        currentSnapshot.playerHP = PlayerHealth.Instance?.CurrentHP ?? 0f;
+        currentSnapshot.budSnapshots = new List<BudSnapshot>();
+
+        IReadOnlyList<HealthBud> buds = healthBudManager.GetAllBuds();
+        for (int i = 0; i < buds.Count; i++)
+        {
+            BudSnapshot budSnap = new BudSnapshot();
+            budSnap.budIndex = i;
+            budSnap.currentHP = buds[i].CurrentHealth;
+            budSnap.isDestroyed = buds[i].IsDestroyed;
+            currentSnapshot.budSnapshots.Add(budSnap);
+        }
+
+        Debug.Log($"[WaveManager] Snapshot taken. Wave: {currentWaveIndex}, PlayerHP: {currentSnapshot.playerHP}, Buds: {currentSnapshot.budSnapshots.Count}");
+    }
+
+    public void RestoreSnapshot()
+    {
+        if (currentSnapshot == null)
+        {
+            Debug.LogWarning("[WaveManager] No snapshot to restore.");
+            return;
+        }
+
+        IReadOnlyList<HealthBud> buds = healthBudManager.GetAllBuds();
+        foreach (BudSnapshot budSnap in currentSnapshot.budSnapshots)
+        {
+            if (budSnap.budIndex >= buds.Count) continue;
+
+            HealthBud bud = buds[budSnap.budIndex];
+            if (budSnap.isDestroyed)
+            {
+                bud.SetDestroyed();
+            }
+            else
+            {
+                bud.Restore();
+                bud.SetHealth(budSnap.currentHP);
+            }
+        }
+
+        PlayerHealth.Instance?.SetHP(currentSnapshot.playerHP);
+
+        Debug.Log($"[WaveManager] Snapshot restored. Wave: {currentSnapshot.waveIndex}");
+    }
+
+    public void RestartWave()
+    {
+        isGameOver = false;
+        waveActive = false;
+
+        List<EnemyPathFollower> enemiesToDespawn = new List<EnemyPathFollower>(aliveEnemies);
+        foreach (EnemyPathFollower enemy in enemiesToDespawn)
+        {
+            if (enemy == null) continue;
+            EnemyRegistry.Instance?.Unregister(enemy);
+            Destroy(enemy.gameObject);
+        }
+
+        aliveEnemies.Clear();
+        remainingPool.Clear();
+        poolExhausted = false;
+        miniBossSpawned = false;
+        releaseTimer = 0f;
+        waveElapsedTime = 0f;
+        
+        ClearWorldDrops();
+        RestoreSnapshot();
+        healthBudManager.ResubscribeBuds();
+        playerHealth?.ResetForZone(healthBudManager.Zone, healthBudManager.AliveBudCount());
+        currentWaveIndex = currentSnapshot.waveIndex;
+
+        Debug.Log($"[WaveManager] Wave restarted. Wave: {currentWaveIndex}");
+    }
+
+    private void ClearWorldDrops()
+    {
+        WorldDrop[] drops = FindObjectsByType<WorldDrop>(FindObjectsSortMode.None);
+        foreach (WorldDrop drop in drops)
+            Destroy(drop.gameObject);
+    }
+
+    public void SetGameOver(bool state)
+    {
+        isGameOver = state;
     }
 }

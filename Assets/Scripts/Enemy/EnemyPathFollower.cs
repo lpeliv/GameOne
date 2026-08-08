@@ -46,6 +46,14 @@ public class EnemyPathFollower : MonoBehaviour
     private Vector3 claimedAttackPosition;
     private bool hasClaimedPosition;
 
+    private EnemyDefinition enemyDefinition;
+    public EnemyDefinition Definition => enemyDefinition;
+
+    private float detectionRange;
+    private float meleeRange;
+    private float behaviourQueryTimer;
+    private float behaviourQueryInterval = 0.2f;
+
     public void Die()
     {
         if (hasClaimedPosition && currentTargetBud != null)
@@ -86,6 +94,15 @@ public class EnemyPathFollower : MonoBehaviour
 
     private void FixedUpdate()
     {
+        if (currentState == EnemyState.Dead) return;
+
+        behaviourQueryTimer += Time.deltaTime;
+        if (behaviourQueryTimer >= behaviourQueryInterval)
+        {
+            behaviourQueryTimer = 0f;
+            CheckBehaviour();
+        }
+
         switch (currentState)
         {
             case EnemyState.Moving:
@@ -96,6 +113,15 @@ public class EnemyPathFollower : MonoBehaviour
                 break;
             case EnemyState.AttackingBud:
                 AttackBud();
+                break;
+            case EnemyState.SeekingPlayer:
+                SeekPlayer();
+                break;
+            case EnemyState.AttackingPlayer:
+                AttackPlayer();
+                break;
+            case EnemyState.ReturningToPath:
+                ReturnToPath();
                 break;
         }
     }
@@ -263,13 +289,17 @@ public class EnemyPathFollower : MonoBehaviour
 
     private void OnArrived()
     {
-        currentState = EnemyState.SeekingBud;
-        currentTargetBud = healthBudManager?.GetClosestBud(transform.position);
         transform.position = path.GetWaypoint(path.Count - 1);
+
+        if (enemyDefinition.behaviour == EnemyBehaviour.TargetBuds)
+            currentState = EnemyState.SeekingBud;
+
+        Debug.Log($"[EnemyPathFollower] Arrived. Behaviour: {enemyDefinition?.behaviour}");
     }
 
     public void Initialize(EnemyDefinition definition, float statMultiplier = 1f)
     {
+        enemyDefinition = definition;
         rb = GetComponent<Rigidbody>();
         if (rb != null)
             rb.mass = rolledSize * statMultiplier;
@@ -281,6 +311,8 @@ public class EnemyPathFollower : MonoBehaviour
         damage = definition.baseDamage * statMultiplier * rolledSize;
         attackRate = definition.baseAttackRate / (rolledSize * statMultiplier);
         attackRange = definition.baseAttackRange;
+        detectionRange = definition.detectionRange;
+        meleeRange = definition.meleeRange;
 
         transform.localScale = Vector3.one * rolledSize;
 
@@ -296,4 +328,154 @@ public class EnemyPathFollower : MonoBehaviour
         healthBudManager = manager;
     }
 
+    private void CheckBehaviour()
+    {
+        if (PlayerInventory.Instance == null) return;
+        if (enemyDefinition == null) return;
+
+        float distToPlayer = Vector3.Distance(
+            transform.position,
+            PlayerInventory.Instance.transform.position
+        );
+
+        if (distToPlayer <= meleeRange &&
+            currentState != EnemyState.Dead &&
+            currentState != EnemyState.SeekingBud &&
+            currentState != EnemyState.AttackingBud)
+        {
+            currentState = EnemyState.AttackingPlayer;
+            return;
+        }
+
+        if (enemyDefinition.behaviour == EnemyBehaviour.TargetPlayer)
+        {
+            bool canChase = currentState == EnemyState.Moving ||
+                            currentState == EnemyState.ReturningToPath;
+
+            bool shouldReturn = currentState == EnemyState.SeekingPlayer &&
+                                distToPlayer > detectionRange;
+
+            if (distToPlayer <= detectionRange &&
+                distToPlayer > meleeRange &&
+                canChase)
+            {
+                currentState = EnemyState.SeekingPlayer;
+                return;
+            }
+
+            if (currentState == EnemyState.AttackingPlayer &&
+                distToPlayer > meleeRange)
+            {
+                currentState = EnemyState.SeekingPlayer;
+                return;
+            }
+
+            if (shouldReturn)
+            {
+                currentState = EnemyState.ReturningToPath;
+                return;
+            }
+        }
+        else
+        {
+            if (currentState == EnemyState.AttackingPlayer &&
+                distToPlayer > meleeRange)
+            {
+                currentState = EnemyState.Moving;
+                return;
+            }
+        }
+    }
+
+    private void SeekPlayer()
+    {
+        Vector3 playerPos = PlayerInventory.Instance.transform.position;
+        Vector3 direction = playerPos - transform.position;
+        direction.y = 0f;
+
+        float distance = direction.magnitude;
+
+        if (direction.sqrMagnitude > 0.001f)
+        {
+            float targetAngle = Mathf.Atan2(direction.x, direction.z) * Mathf.Rad2Deg;
+            float angle = Mathf.LerpAngle(
+                transform.eulerAngles.y,
+                targetAngle,
+                rotationSpeed * Time.deltaTime
+            );
+            transform.eulerAngles = new Vector3(0f, angle, 0f);
+        }
+
+        rb.MovePosition(transform.position + direction.normalized * derivedSpeed * Time.deltaTime);
+    }
+
+    private void ReturnToPath()
+    {
+        if (path == null) return;
+
+        int targetIndex = 0;
+        float closestDist = float.MaxValue;
+
+        for (int i = 0; i < path.Count; i++)
+        {
+            Vector3 waypointPos = path.GetWaypoint(i) + fixedOffset;
+            float dist = Vector3.Distance(transform.position, waypointPos);
+
+            if (dist < closestDist)
+            {
+                closestDist = dist;
+                targetIndex = i;
+            }
+        }
+
+        Vector3 target = path.GetWaypoint(targetIndex) + fixedOffset;
+        Vector3 direction = (target - transform.position);
+        direction.y = 0f;
+
+        if (direction.sqrMagnitude > 0.001f)
+        {
+            float targetAngle = Mathf.Atan2(direction.x, direction.z) * Mathf.Rad2Deg;
+            float angle = Mathf.LerpAngle(
+                transform.eulerAngles.y,
+                targetAngle,
+                rotationSpeed * Time.deltaTime
+            );
+            transform.eulerAngles = new Vector3(0f, angle, 0f);
+        }
+
+        rb.MovePosition(transform.position + direction.normalized * derivedSpeed * Time.deltaTime);
+
+        if (direction.magnitude < 0.005f * MasterManager.TileScale)
+        {
+            rb.position = target;
+            transform.position = target;
+            currentWaypointIndex = targetIndex;
+            segmentProgress = 0f;
+            currentState = EnemyState.Moving;
+        }
+    }
+
+    private void AttackPlayer()
+    {
+        if (PlayerHealth.Instance == null) return;
+
+        float distToPlayer = Vector3.Distance(
+            transform.position,
+            PlayerInventory.Instance.transform.position
+        );
+
+        if (distToPlayer > meleeRange)
+        {
+            currentState = EnemyState.SeekingPlayer;
+            return;
+        }
+
+        attackTimer += Time.deltaTime;
+        if (attackTimer >= 1f / attackRate)
+        {
+            attackTimer = 0f;
+            PlayerHealth.Instance.TakeDamage(damage);
+            Debug.Log($"[EnemyPathFollower] Attacked player for {damage}.");
+        }
+    }
 }
