@@ -7,6 +7,9 @@ public class PlayerInventory : MonoBehaviour
 
     public static PlayerInventory Instance { get; private set; }
 
+    private int gold = 0;
+    public int Gold => gold;
+
     private void Awake()
     {
         if (Instance != null && Instance != this)
@@ -77,4 +80,26 @@ public class PlayerInventory : MonoBehaviour
         foreach (var kvp in inventory)
             Debug.Log($"  {kvp.Key.itemName}: {kvp.Value}");
     }
+
+    public void AddGold(int amount)
+    {
+        if (amount <= 0) return;
+        gold += amount;
+        Debug.Log($"[PlayerInventory] Gold added: {amount}. Total: {gold}");
+    }
+
+    public bool SpendGold(int amount)
+    {
+        if (amount <= 0) return false;
+        if (gold < amount)
+        {
+            Debug.LogWarning($"[PlayerInventory] Not enough gold. Have: {gold}, Need: {amount}");
+            return false;
+        }
+        gold -= amount;
+        Debug.Log($"[PlayerInventory] Gold spent: {amount}. Remaining: {gold}");
+        return true;
+    }
+
+    public bool HasGold(int amount) => gold >= amount;
 }

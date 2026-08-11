@@ -19,4 +19,7 @@ public class ItemDefinition : ScriptableObject
     public float lifetimeDuration = 300f;
     [Range(0f, 1f)]
     public float autoPickupFee = 0.5f;
+
+    [Header("Economy")]
+    public int goldValue = 10;
 }

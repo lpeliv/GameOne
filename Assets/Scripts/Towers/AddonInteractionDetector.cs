@@ -1,3 +1,4 @@
+using TMPro;
 using UnityEngine;
 
 public class AddonInteractionDetector : MonoBehaviour
@@ -9,12 +10,14 @@ public class AddonInteractionDetector : MonoBehaviour
     [Header("Detection")]
     [SerializeField] private float interactRange = 5f;
     [SerializeField] private LayerMask interactLayer;
+    [SerializeField] private TextMeshProUGUI interactionPromptText;
 
     private TurretJoint lastHighlightedJoint;
     private TurretAddon lastHighlightedAddon;
 
     private void Update()
     {
+        if (WitchShopUI.Instance != null && WitchShopUI.Instance.IsOpen) return;
         DetectInteractable();
     }
 
@@ -82,9 +85,17 @@ public class AddonInteractionDetector : MonoBehaviour
                 HandleAddonDetected(addon);
                 return;
             }
+
+            IInteractable interactable = hit.collider.GetComponentInParent<IInteractable>();
+            if (interactable != null)
+            {
+                ShowPrompt(interactable.InteractionPrompt);
+                return;
+            }
         }
 
         ClearHighlights();
+        HidePrompt();
     }
 
     public void TryInteract()
@@ -105,6 +116,13 @@ public class AddonInteractionDetector : MonoBehaviour
         if (addon != null)
         {
             HandleAddonInteract(addon);
+            return;
+        }
+
+        IInteractable interactable = hit.collider.GetComponentInParent<IInteractable>();
+        if (interactable != null)
+        {
+            interactable.OnInteract();
             return;
         }
     }
@@ -160,5 +178,18 @@ public class AddonInteractionDetector : MonoBehaviour
     private void ClearAddonHighlight(TurretAddon addon)
     {
         lastHighlightedAddon = null;
+    }
+
+    private void ShowPrompt(string message)
+    {
+        if (interactionPromptText == null) return;
+        interactionPromptText.gameObject.SetActive(true);
+        interactionPromptText.text = message;
+    }
+
+    public void HidePrompt()
+    {
+        if (interactionPromptText == null) return;
+        interactionPromptText.gameObject.SetActive(false);
     }
 }
