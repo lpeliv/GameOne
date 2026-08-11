@@ -1,21 +1,19 @@
-# Game One Update #06
+# Game One Update #07
 ### Petra Prototype
 
-**Date:** June 8, 2026
+**Date:** June 11, 2026
 
 ---
 
 ## What I Worked On
-- Enemies have different states - either path following or targeting and attacking a player
-- Enemies drop loot when eliminated
-- Player now has a visible healthbar, based on the health buds located at the base, depleting as they get destroyed by enemies
-- Game over screen was added, along with the condition that ends the game
-- In case of a game over, player can retry from the wave they failed, or leave the game
+- A simple Shop UI was setup, along with the first NPC
+- Inventory system is now connected to the shop
+- Players can sell 1, 5 or 10 of the same item at once, in return of gold
 
 ---
 
 ## Bugs Fixed
-- A bug with visualisation of the target area caused only 2 zones to appear instead of 4. This has been fixed
+- No major bug fixes this time
 
 ---
 
@@ -28,18 +26,17 @@
 
 ## Next Goals
 - Improve enemy health display
-- Introduce shop and upgrades
+- Introduce upgrades
 - Hammer repair minigame
 - Add first version of models
+- Introduce NPC Walk pattern on wave start
 
 ---
 
 ## Screenshots / Media
 <div align="center">
 
-<img src="githubimages/image17.png" width="45%">
-<img src="githubimages/image18.png" width="45%">
-<img src="githubimages/image19.png" width="45%">
-<img src="githubimages/image20.png" width="45%">
+<img src="githubimages/image21.png" width="45%">
+<img src="githubimages/image22.png" width="45%">
 
 </div>
