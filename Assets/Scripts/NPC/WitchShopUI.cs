@@ -1,10 +1,10 @@
 using System.Collections;
 using System.Collections.Generic;
+using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
-using TMPro;
 
-public class WitchShopUI : MonoBehaviour
+public class WitchShopUI : ShopUIBase
 {
     [Header("Panels")]
     [SerializeField] private GameObject witchShopPanel;
@@ -26,23 +26,10 @@ public class WitchShopUI : MonoBehaviour
     [SerializeField] private Button shopTabButton;
     [SerializeField] private Button potionsTabButton;
 
-    public static WitchShopUI Instance { get; private set; }
-
-    private bool isOpen = false;
-    public bool IsOpen => isOpen;
-
     private void Awake()
     {
-        if (Instance != null && Instance != this)
-        {
-            Destroy(gameObject);
-            return;
-        }
-        Instance = this;
-
         shopTabButton.onClick.AddListener(ShowShopTab);
         potionsTabButton.onClick.AddListener(ShowPotionsTab);
-
         Hide();
     }
 
@@ -60,41 +47,19 @@ public class WitchShopUI : MonoBehaviour
         // TODO: populate potions
     }
 
-    private void Update()
+    public override void Show()
     {
-        if (isOpen && Input.GetKeyDown(KeyCode.Escape))
-            Hide();
-    }
+        base.Show();
 
-    public void Show()
-    {
-        isOpen = true;
-        gameObject.SetActive(true);
-
-        Cursor.lockState = CursorLockMode.None;
-        Cursor.visible = true;
-        PlayerController.LookLocked = true;
-        PlayerController.InputLocked = true;
-
+        witchShopPanel.SetActive(true);
         dialogue1Text.text = defaultDialogue1;
         dialogue2Text.text = defaultDialogue2;
-
-        AddonInteractionDetector detector = FindObjectOfType<AddonInteractionDetector>();
-        detector?.HidePrompt();
-
         ShowShopTab();
     }
 
-    public void Hide()
+    public override void Hide()
     {
-        isOpen = false;
-        gameObject.SetActive(false);
-
-        Cursor.lockState = CursorLockMode.Locked;
-        Cursor.visible = false;
-        PlayerController.LookLocked = false;
-        PlayerController.InputLocked = false;
-
+        base.Hide();
         StopAllCoroutines();
     }
 
@@ -127,7 +92,7 @@ public class WitchShopUI : MonoBehaviour
                 continue;
             }
 
-            entry.Setup(kvp.Key, kvp.Value);
+            entry.Setup(kvp.Key, kvp.Value, this);
         }
     }
 

@@ -3,6 +3,9 @@ using UnityEngine;
 
 public class PlayerInventory : MonoBehaviour
 {
+    [Header("Starting Values")]
+    [SerializeField] private int startingGold = 10500;
+
     private Dictionary<ItemDefinition, int> inventory = new Dictionary<ItemDefinition, int>();
 
     public static PlayerInventory Instance { get; private set; }
@@ -18,6 +21,7 @@ public class PlayerInventory : MonoBehaviour
             return;
         }
         Instance = this;
+        gold = startingGold;
     }
 
     public void AddItem(ItemDefinition item, int quantity)

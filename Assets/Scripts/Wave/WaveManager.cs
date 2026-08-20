@@ -14,6 +14,9 @@ public class WaveManager : MonoBehaviour
     [Header("Player")]
     [SerializeField] private PlayerHealth playerHealth;
 
+    [Header("NPCs")]
+    [SerializeField] private List<NPCBase> npcs;
+
     private int currentWaveIndex = 0;
     private bool waveActive = false;
     private bool obstacleRemovedThisCycle = false;
@@ -145,6 +148,7 @@ public class WaveManager : MonoBehaviour
 
         UpdateActiveSpawners();
 
+        SendNPCsToHouse();
         Debug.Log($"[WaveManager] Wave {currentWaveIndex + 1} started.");
     }
 
@@ -178,6 +182,8 @@ public class WaveManager : MonoBehaviour
 
         if (zoneDefinition.IsSpawnerUnlockWave(currentWaveIndex))
             Debug.Log("[WaveManager] Obstacle remover required before next wave can start.");
+
+        SendNPCsToOutpost();
     }
 
     private void OnZoneComplete()
@@ -483,6 +489,7 @@ public class WaveManager : MonoBehaviour
         playerHealth?.ResetForZone(healthBudManager.Zone, healthBudManager.AliveBudCount());
         currentWaveIndex = currentSnapshot.waveIndex;
 
+        SendNPCsToOutpost();
         Debug.Log($"[WaveManager] Wave restarted. Wave: {currentWaveIndex}");
     }
 
@@ -496,5 +503,19 @@ public class WaveManager : MonoBehaviour
     public void SetGameOver(bool state)
     {
         isGameOver = state;
+    }
+
+    private void SendNPCsToHouse()
+    {
+        foreach (NPCBase npc in npcs)
+            if (npc != null)
+                npc.WalkToHouse();
+    }
+
+    private void SendNPCsToOutpost()
+    {
+        foreach (NPCBase npc in npcs)
+            if (npc != null)
+                npc.WalkToOutpost();
     }
 }

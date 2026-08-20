@@ -14,10 +14,16 @@ public class AddonInteractionDetector : MonoBehaviour
 
     private TurretJoint lastHighlightedJoint;
     private TurretAddon lastHighlightedAddon;
+    private ShopUIBase[] shops;
+
+    private void Awake()
+    {
+        shops = FindObjectsByType<ShopUIBase>(FindObjectsSortMode.None);
+    }
 
     private void Update()
     {
-        if (WitchShopUI.Instance != null && WitchShopUI.Instance.IsOpen) return;
+        if (IsAnyShopOpen()) return;
         DetectInteractable();
     }
 
@@ -191,5 +197,12 @@ public class AddonInteractionDetector : MonoBehaviour
     {
         if (interactionPromptText == null) return;
         interactionPromptText.gameObject.SetActive(false);
+    }
+
+    private bool IsAnyShopOpen()
+    {
+        foreach (ShopUIBase shop in shops)
+            if (shop != null && shop.IsOpen) return true;
+        return false;
     }
 }

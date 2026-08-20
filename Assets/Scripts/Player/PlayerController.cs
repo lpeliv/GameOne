@@ -24,11 +24,11 @@ public class PlayerController : MonoBehaviour
 
     [Header("Hammer")]
     [SerializeField] private Transform hammerRoot;
-    [SerializeField] private float hammerRange = 2f;
-    [SerializeField] private float swingDuration = 0.4f;
+    [SerializeField] public float hammerRange = 2f;
+    [SerializeField] public float swingDuration = 0.4f;
     [SerializeField] private float swingAngle = 80f;
     [SerializeField] private float hammerStrength = 1f;
-    [SerializeField] private float meleeDamage = 20f;
+    [SerializeField] public float meleeDamage = 20f;
     [SerializeField] private LayerMask hammerHitLayers;
 
     [Header("Alt Attack")]

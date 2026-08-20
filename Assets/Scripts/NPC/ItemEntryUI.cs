@@ -15,13 +15,15 @@ public class ItemEntryUI : MonoBehaviour
 
     private ItemDefinition definition;
     private int currentCount;
+    private WitchShopUI witchShopUI;
 
-    public void Setup(ItemDefinition def, int count)
+    public void Setup(ItemDefinition def, int count, WitchShopUI shopUI)
     {
         definition = def;
         currentCount = count;
-        countText.text = $"x{count}";
+        witchShopUI = shopUI;
 
+        countText.text = $"x{count}";
         itemNameText.text = def.itemName;
         valueText.text = $"{def.goldValue}g";
 
@@ -46,13 +48,13 @@ public class ItemEntryUI : MonoBehaviour
         PlayerInventory.Instance.AddGold(goldEarned);
 
         currentCount -= actualAmount;
-        WitchShopUI.Instance?.UpdateGoldDisplay();
-
+        witchShopUI?.UpdateGoldDisplay();
         countText.text = $"x{currentCount}";
+
         if (currentCount <= 0)
         {
             Destroy(gameObject);
-            WitchShopUI.Instance?.ShowEmptyMessage();
+            witchShopUI?.ShowEmptyMessage();
             return;
         }
 
