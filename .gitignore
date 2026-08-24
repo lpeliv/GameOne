@@ -11,6 +11,9 @@
 /[Ll]ogs/
 /[Uu]ser[Ss]ettings/
 *.log
+*.pidb.meta
+*.pdb.meta
+*.mdb.meta
 
 # MemoryCaptures can get excessive in size.
 # They also could contain extremely sensitive data
@@ -73,3 +76,14 @@ crashlytics-build.properties
 # Temporary auto-generated Android Assets
 /[Aa]ssets/[Ss]treamingAssets/aa.meta
 /[Aa]ssets/[Ss]treamingAssets/aa/*
+
+# Claude Code
+.claude/
+.claudeignore
+claude_cache/
+
+# Node/npm
+node_modules/
+package-lock.json
+npm-debug.log*
+.npm/

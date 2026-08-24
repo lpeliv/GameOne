@@ -220,7 +220,6 @@ public class MasterManager : MonoBehaviour
                 allBuds.Add(bud);
         }
 
-        // Debug zone distribution
         Dictionary<Side, int> zoneCounts = new Dictionary<Side, int>();
         foreach (HealthBud bud in allBuds)
         {
@@ -228,9 +227,6 @@ public class MasterManager : MonoBehaviour
                 zoneCounts[bud.zone] = 0;
             zoneCounts[bud.zone]++;
         }
-
-        foreach (var kvp in zoneCounts)
-            Debug.Log($"[MasterManager] Zone {kvp.Key}: {kvp.Value} buds");
 
         Debug.Log($"[MasterManager] Active zone: {healthBudManager.Zone}");
 

@@ -8,6 +8,9 @@ public class PlayerInventory : MonoBehaviour
 
     private Dictionary<ItemDefinition, int> inventory = new Dictionary<ItemDefinition, int>();
 
+    private BlueprintProgress blueprintProgress = new BlueprintProgress();
+    public BlueprintProgress BlueprintProgress => blueprintProgress;
+
     public static PlayerInventory Instance { get; private set; }
 
     private int gold = 0;

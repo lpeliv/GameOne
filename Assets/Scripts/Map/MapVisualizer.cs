@@ -133,11 +133,6 @@ public class MapVisualizer : MonoBehaviour
                 if (targetManager.TileZones.TryGetValue(budPos, out Side budZone))
                 {
                     bud.zone = budZone;
-                    Debug.Log($"[MapVisualizer] Bud at {budPos} assigned zone {budZone}");
-                }
-                else
-                {
-                    Debug.LogWarning($"[MapVisualizer] Bud at {budPos} not found in TileZones");
                 }
             }
         }

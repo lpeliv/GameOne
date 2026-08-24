@@ -17,6 +17,9 @@ public class WaveManager : MonoBehaviour
     [Header("NPCs")]
     [SerializeField] private List<NPCBase> npcs;
 
+    [Header("Doors")]
+    [SerializeField] private List<ZoneDoor> zoneDoors;
+
     private int currentWaveIndex = 0;
     private bool waveActive = false;
     private bool obstacleRemovedThisCycle = false;
@@ -134,7 +137,6 @@ public class WaveManager : MonoBehaviour
             return;
         }
 
-        //WaveDefinition wave = zoneDefinition.GetWave(currentWaveIndex);
         if (wave == null) return;
 
         remainingPool = wave.BuildShuffledPool();
@@ -148,6 +150,7 @@ public class WaveManager : MonoBehaviour
 
         UpdateActiveSpawners();
 
+        CloseDoors();
         SendNPCsToHouse();
         Debug.Log($"[WaveManager] Wave {currentWaveIndex + 1} started.");
     }
@@ -183,12 +186,16 @@ public class WaveManager : MonoBehaviour
         if (zoneDefinition.IsSpawnerUnlockWave(currentWaveIndex))
             Debug.Log("[WaveManager] Obstacle remover required before next wave can start.");
 
+        OpenDoors();
         SendNPCsToOutpost();
     }
 
     private void OnZoneComplete()
     {
-        Debug.Log($"[WaveManager] Zone {zoneDefinition.zoneName} complete.");
+        Debug.Log($"[WaveManager] Zone complete.");
+        OpenDoors();
+        SendNPCsToOutpost();
+        GameProgressionManager.Instance?.OnZoneComplete();
     }
 
     private void Update()
@@ -489,6 +496,7 @@ public class WaveManager : MonoBehaviour
         playerHealth?.ResetForZone(healthBudManager.Zone, healthBudManager.AliveBudCount());
         currentWaveIndex = currentSnapshot.waveIndex;
 
+        OpenDoors();
         SendNPCsToOutpost();
         Debug.Log($"[WaveManager] Wave restarted. Wave: {currentWaveIndex}");
     }
@@ -517,5 +525,23 @@ public class WaveManager : MonoBehaviour
         foreach (NPCBase npc in npcs)
             if (npc != null)
                 npc.WalkToOutpost();
+    }
+
+    private void OpenDoors()
+    {
+        foreach (ZoneDoor door in zoneDoors)
+        {
+            if (door != null && door.State != ZoneDoorState.Locked)
+                door.SetState(ZoneDoorState.Open);
+        }
+    }
+
+    private void CloseDoors()
+    {
+        foreach (ZoneDoor door in zoneDoors)
+        {
+            if (door != null && door.State != ZoneDoorState.Locked)
+                door.SetState(ZoneDoorState.Closed);
+        }
     }
 }
