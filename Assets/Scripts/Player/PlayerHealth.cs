@@ -12,6 +12,10 @@ public class PlayerHealth : MonoBehaviour
     private bool isInvincible;
     private float invincibilityTimer;
 
+    private bool isSlowed = false;
+    private float slowTimer = 0f;
+    private const float slowDuration = 1f;
+
     private Dictionary<Side, int> zoneActiveBuds = new Dictionary<Side, int>();
     private bool isFinalRound = false;
 
@@ -84,6 +88,17 @@ public class PlayerHealth : MonoBehaviour
                 invincibilityTimer = 0f;
             }
         }
+
+        if (isSlowed)
+        {
+            slowTimer += Time.deltaTime;
+            if (slowTimer >= slowDuration)
+            {
+                isSlowed = false;
+                slowTimer = 0f;
+                PlayerController.Instance?.RemoveSlow();
+            }
+        }
     }
 
     public void TakeDamage(float amount)
@@ -94,6 +109,10 @@ public class PlayerHealth : MonoBehaviour
         currentHP = Mathf.Max(0f, currentHP - amount);
         isInvincible = true;
         invincibilityTimer = 0f;
+
+        isSlowed = true;
+        slowTimer = 0f;
+        PlayerController.Instance?.ApplySlow();
 
         Debug.Log($"[PlayerHealth] Took {amount} damage. HP: {currentHP}/{maxHP}");
 

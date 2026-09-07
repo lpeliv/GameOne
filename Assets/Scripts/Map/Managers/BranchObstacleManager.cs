@@ -76,6 +76,11 @@ public class BranchObstacleManager : MonoBehaviour
 
     }
 
+    public bool IsObstacleRemoved(Side side, int branchIndex)
+    {
+        return GetObstacleForBranch(side, branchIndex) == null;
+    }
+
     public BranchObstacle GetObstacleForBranch(Side side, int branchIndex)
     {
         if (!obstaclesByZone.TryGetValue(side, out List<BranchObstacle> list))

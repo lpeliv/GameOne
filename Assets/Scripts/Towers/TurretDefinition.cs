@@ -6,6 +6,9 @@ public class TurretDefinition : ScriptableObject
     [Header("Identity")]
     public string displayName;
 
+    [Header("Blueprint")]
+    public string blueprintId;
+
     [Header("Prefabs")]
     public GameObject basePrefab;
 

@@ -16,9 +16,9 @@ public class EnemySpawner : MonoBehaviour
         isActive = false;
     }
 
-    public void Active()
+    public void Activate()
     {
-        if (!isActive) return;
+        if (isActive) return;
         isActive = true;
         OnActivated();
     }

@@ -7,6 +7,9 @@ public class AddonDefinition : ScriptableObject
     public string displayName;
     public AddonType addonType;
 
+    [Header("Blueprint")]
+    public string blueprintId;
+
     [Header("Prefab")]
     public GameObject addonPrefab;
     public GameObject projectilePrefab;

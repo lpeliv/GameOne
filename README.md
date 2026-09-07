@@ -1,27 +1,25 @@
 # Game One Update #09
 ### Petra Prototype
 
-**Date:** August 24, 2026
+**Date:** September 7, 2026
 
 ---
 
 ## What I Worked On
-- Learning how calendar works as last 2 updates had the wrong month written...
-- All 3 NPC shops are now working
-- New Engineer blueprint shop was added, allowing a player to purchase turrets
-- New blueprints can be unlocked by collecting turret parts, scattered around the map 
+- Changed the blueprint UI, making it more interactive
+- Enemies now selectively spawn in a pool of spawners, randomly dispersed according to unlocked paths
+- Added Progression manager, Wave handler and Boss spawning systems 
 
 ---
 
 ## Bugs Fixed
-- No major bug fixes this time
+- Fixed player not able to put turrets back in inventory
 
 ---
 
 ## Known Issues
 - Performance issues
 - Enemies attack all buds instead of only those from the specific zone
-- Player can't put the turret back in his inventory
 
 ---
 
@@ -29,16 +27,15 @@
 - Improve enemy health display
 - Hammer repair minigame
 - Add first version of models
-- Introduce a progression manager, handling waves, zone unlocks, bosses, etc.
-- Transfer the bought turret addons to player inventory and rewamp the building menu
+- Introduce a new zone unlock system
+- Improve enemy AI and state switching
 
 ---
 
 ## Screenshots / Media
 <div align="center">
 
-<img src="githubimages/image25.png" width="45%">
-<img src="githubimages/image26.png" width="45%">
-<img src="githubimages/image27.png" width="45%">
+<img src="githubimages/image28.png" width="45%">
+<img src="githubimages/image29.png" width="45%">
 
 </div>

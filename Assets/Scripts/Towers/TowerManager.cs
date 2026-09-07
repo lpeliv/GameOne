@@ -5,65 +5,46 @@ public class TowerManager : MonoBehaviour
 {
     [Header("References")]
     [SerializeField] private WaveManager waveManager;
-    [SerializeField] private BuildPromptUI buildPromptUI;
-
-    [Header("Turret")]
-    [SerializeField] private TurretDefinition turretDefinition;
-
-    [SerializeField] private BuildableTileDetector tileDetector;
-    
-    [Header("Testing")]
-    [SerializeField] private AddonDefinition testAddonDefinition;
-    [SerializeField] private GameObject testAddonPrefab;
 
     private List<BuildableTile> occupiedTiles = new List<BuildableTile>();
-    private BuildableTile pendingTile;
 
     public bool CanBuildAt(BuildableTile tile)
     {
         if (tile == null) return false;
         if (tile.IsOccupied) return false;
         if (waveManager.WaveActive) return false;
-        if (!tileDetector.BuildModeActive) return false;
         return true;
     }
 
-    public void RequestBuild(BuildableTile tile)
+    public void RequestBuild(BuildableTile tile, TurretDefinition def)
     {
-        if (!CanBuildAt(tile)) return;
-
-        pendingTile = tile;
-        buildPromptUI.SetOnConfirm(ConfirmBuild);
-    }
-
-    private void ConfirmBuild()
-    {
-        if (pendingTile == null) return;
-        if (!CanBuildAt(pendingTile))
+        if (def == null)
         {
-            pendingTile = null;
+            Debug.LogWarning("[TowerManager] RequestBuild called with null TurretDefinition.");
             return;
         }
+        if (!PlayerInventory.Instance.HasBase(def))
+        {
+            Debug.LogWarning("[TowerManager] No base available in inventory.");
+            return;
+        }
+        if (!CanBuildAt(tile)) return;
 
-        PlaceTurretBase(pendingTile);
-        pendingTile = null;
+        PlaceTurretBase(tile, def);
+        PlayerInventory.Instance.RemoveBase(def);
     }
 
-    private void PlaceTurretBase(BuildableTile tile)
+    private void PlaceTurretBase(BuildableTile tile, TurretDefinition def)
     {
-        Debug.Log("[TowerManager] PlaceTurretBase called.");
-
-        if (turretDefinition?.basePrefab == null)
+        if (def.basePrefab == null)
         {
             Debug.LogWarning("[TowerManager] No turret base prefab assigned.");
             return;
         }
 
         Vector3 spawnPos = tile.transform.position;
-        GameObject turretGO = Instantiate(turretDefinition.basePrefab, spawnPos, Quaternion.identity);
-        Debug.Log($"[TowerManager] Instantiated: {turretGO != null}, Name: {turretGO?.name}");
+        GameObject turretGO = Instantiate(def.basePrefab, spawnPos, Quaternion.identity);
         TurretBase turretBase = turretGO.GetComponent<TurretBase>();
-        Debug.Log($"[TowerManager] TurretBase component found: {turretBase != null}");
 
         if (turretBase == null)
         {
@@ -72,25 +53,11 @@ public class TowerManager : MonoBehaviour
             return;
         }
 
-        turretBase.Initialize(turretDefinition);
+        turretBase.Initialize(def);
         tile.SetOccupied(true);
         occupiedTiles.Add(tile);
 
         Debug.Log($"[TowerManager] Turret base placed at {spawnPos}.");
-
-        // Disabled test addon (addon definition)
-        //TurretCylinder firstCylinder = turretBase.GetCylinder(0);
-        //if (firstCylinder != null && testAddonDefinition != null && testAddonPrefab != null)
-        //{
-        //    GameObject addonGO = Instantiate(testAddonPrefab);
-        //    TurretAddon addon = addonGO.GetComponent<TurretAddon>();
-
-        //    if (addon != null)
-        //    {
-        //        addon.Initialize(testAddonDefinition);
-        //        firstCylinder.Joint.Attach(addon);
-        //    }
-        //}
     }
 
     public void RemoveTurret(BuildableTile tile)

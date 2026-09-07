@@ -16,24 +16,35 @@ public class NPCBase : MonoBehaviour
     private bool isMoving = false;
     private int currentWaypointIndex = 0;
     private List<Transform> currentPath;
+    private bool isAtHouse = false;
+    private bool isAtOutpost = true;
 
     public bool IsMoving => isMoving;
+    public bool IsAtHouse => isAtHouse;
+    public bool IsAtOutpost => isAtOutpost;
 
     public void WalkToHouse()
     {
         if (isMoving) return;
-        StartCoroutine(FollowPath(houseWaypoints));
+        isAtOutpost = false;
+        StartCoroutine(FollowPath(houseWaypoints, true));
     }
 
     public void WalkToOutpost()
     {
         if (isMoving) return;
-        StartCoroutine(FollowPath(outpostWaypoints));
+        isAtHouse = false;
+        StartCoroutine(FollowPath(outpostWaypoints, false));
     }
 
-    private IEnumerator FollowPath(List<Transform> waypoints)
+    private IEnumerator FollowPath(List<Transform> waypoints, bool goingToHouse)
     {
-        if (waypoints == null || waypoints.Count == 0) yield break;
+        if (waypoints == null || waypoints.Count == 0)
+        {
+            if (goingToHouse) isAtHouse = true;
+            else isAtOutpost = true;
+            yield break;
+        }
 
         isMoving = true;
         currentWaypointIndex = 0;
@@ -70,6 +81,8 @@ public class NPCBase : MonoBehaviour
         }
 
         isMoving = false;
+        if (goingToHouse) isAtHouse = true;
+        else isAtOutpost = true;
         OnPathComplete();
     }
 

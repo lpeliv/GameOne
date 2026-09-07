@@ -24,6 +24,32 @@ public class EnemyPathBuilder
         return new EnemyPath(waypoints, zone);
     }
 
+    public EnemyPath BuildFromSpawner(Vector2Int spawnerPos, Vector2Int endingPos)
+    {
+        List<Vector2Int> pathTiles = new List<Vector2Int>();
+        HashSet<Vector2Int> visited = new HashSet<Vector2Int>();
+
+        Vector2Int current = spawnerPos;
+        pathTiles.Add(current);
+        visited.Add(current);
+
+        while (current != endingPos)
+        {
+            Vector2Int? next = GetNextTile(current, visited, endingPos);
+            if (next == null) break;
+
+            pathTiles.Add(next.Value);
+            visited.Add(next.Value);
+            current = next.Value;
+        }
+
+        List<Vector3> waypoints = new List<Vector3>();
+        foreach (Vector2Int tile in pathTiles)
+            waypoints.Add(ToWorldPos(tile));
+
+        return new EnemyPath(waypoints, zone);
+    }
+
     private Vector2Int? GetNextTile(Vector2Int current, HashSet<Vector2Int> visited, Vector2Int endingPos)
     {
         Vector2Int? best = null;

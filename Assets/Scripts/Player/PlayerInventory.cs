@@ -11,6 +11,11 @@ public class PlayerInventory : MonoBehaviour
     private BlueprintProgress blueprintProgress = new BlueprintProgress();
     public BlueprintProgress BlueprintProgress => blueprintProgress;
 
+    private List<TurretDefinition> ownedBases = new List<TurretDefinition>();
+    private List<AddonDefinition> ownedAddons = new List<AddonDefinition>();
+    public IReadOnlyList<TurretDefinition> OwnedBases => ownedBases;
+    public IReadOnlyList<AddonDefinition> OwnedAddons => ownedAddons;
+
     public static PlayerInventory Instance { get; private set; }
 
     private int gold = 0;
@@ -109,4 +114,50 @@ public class PlayerInventory : MonoBehaviour
     }
 
     public bool HasGold(int amount) => gold >= amount;
+
+    public void AddBase(TurretDefinition def)
+    {
+        if (def == null) return;
+        ownedBases.Add(def);
+    }
+
+    public void AddAddon(AddonDefinition def)
+    {
+        if (def == null) return;
+        ownedAddons.Add(def);
+    }
+
+    public bool HasBase(TurretDefinition def) => ownedBases.Contains(def);
+
+    public bool RemoveBase(TurretDefinition def)
+    {
+        if (def == null) return false;
+        return ownedBases.Remove(def);
+    }
+
+    public bool HasAnyBase() => ownedBases.Count > 0;
+
+    public bool HasAnyAddon() => ownedAddons.Count > 0;
+
+    public bool RemoveAddon(AddonDefinition def)
+    {
+        if (def == null) return false;
+        return ownedAddons.Remove(def);
+    }
+
+    public int CountOwnedBases(TurretDefinition def)
+    {
+        int count = 0;
+        for (int i = 0; i < ownedBases.Count; i++)
+            if (ownedBases[i] == def) count++;
+        return count;
+    }
+
+    public int CountOwnedAddons(AddonDefinition def)
+    {
+        int count = 0;
+        for (int i = 0; i < ownedAddons.Count; i++)
+            if (ownedAddons[i] == def) count++;
+        return count;
+    }
 }

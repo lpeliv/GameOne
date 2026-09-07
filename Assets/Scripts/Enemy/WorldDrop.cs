@@ -88,8 +88,6 @@ public class WorldDrop : MonoBehaviour
         autoPickupFee = def.autoPickupFee;
 
         ScatterOnSpawn();
-
-        Debug.Log($"[WorldDrop] Initialized {def.itemName} x{qty}. RB found: {rb != null}");
     }
 
     private void ScatterOnSpawn()

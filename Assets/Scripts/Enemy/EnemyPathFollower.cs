@@ -9,6 +9,10 @@ public class EnemyPathFollower : MonoBehaviour
     [Header("Offset")]
     [SerializeField] private float maxOffset = 0.3f;
 
+    [Header("Grace Period")]
+    [SerializeField] private float graceDuration = 2f;
+    [SerializeField] private int waypointGraceCount = 2;
+
     private EnemyPath path;
     private Vector3 fixedOffset;
     private int currentWaypointIndex;
@@ -54,6 +58,31 @@ public class EnemyPathFollower : MonoBehaviour
     private float behaviourQueryTimer;
     private float behaviourQueryInterval = 0.2f;
 
+    private int cachedReturnIndex = 0;
+    private float returnIndexTimer = 0f;
+    private const float returnIndexInterval = 0.1f;
+
+    private int hittableLayer;
+
+    private float graceTimer = 0f;
+
+    private float separationTimer = 0f;
+    private const float separationInterval = 0.2f;
+    private Vector3 cachedSeparationForce = Vector3.zero;
+
+    private float returnBlend = 0f;
+    private const float blendSpeed = 2f;
+    private bool isBlending = false;
+    private Vector3 blendStartPos;
+    private Quaternion blendStartRot;
+    private int blendTargetWaypointIndex = 0;
+
+    private bool IsInGrace()
+    {
+        return graceTimer < graceDuration ||
+               currentWaypointIndex < waypointGraceCount;
+    }
+
     public void Die()
     {
         if (hasClaimedPosition && currentTargetBud != null)
@@ -74,6 +103,7 @@ public class EnemyPathFollower : MonoBehaviour
         );
         currentWaypointIndex = 0;
         segmentProgress = 0f;
+        graceTimer = 0f;
         currentState = EnemyState.Idle;
     }
 
@@ -95,6 +125,9 @@ public class EnemyPathFollower : MonoBehaviour
     private void FixedUpdate()
     {
         if (currentState == EnemyState.Dead) return;
+
+        if (graceTimer < graceDuration)
+            graceTimer += Time.fixedDeltaTime;
 
         behaviourQueryTimer += Time.deltaTime;
         if (behaviourQueryTimer >= behaviourQueryInterval)
@@ -124,6 +157,16 @@ public class EnemyPathFollower : MonoBehaviour
                 ReturnToPath();
                 break;
         }
+
+        separationTimer += Time.fixedDeltaTime;
+        if (separationTimer >= separationInterval)
+        {
+            separationTimer = 0f;
+            cachedSeparationForce = CalculateSeparation();
+        }
+
+        if (cachedSeparationForce.sqrMagnitude > 0.001f)
+            rb.MovePosition(rb.position + cachedSeparationForce * Time.fixedDeltaTime);
     }
 
     private void SeekBud()
@@ -217,11 +260,6 @@ public class EnemyPathFollower : MonoBehaviour
 
         Vector3 p1 = path.GetWaypoint(currentWaypointIndex);
         Vector3 p2 = path.GetWaypoint(Mathf.Min(currentWaypointIndex + 1, path.Count - 1));
-        
-        Vector3 newPosition = EvaluateCatmullRom(currentWaypointIndex, segmentProgress) + fixedOffset;
-        velocity = (newPosition - transform.position) / Time.deltaTime;
-        rb.MovePosition(newPosition);
-        transform.position = newPosition;
 
         float segmentLength = Vector3.Distance(p1, p2);
         float step = segmentLength > 0.001f ? derivedSpeed * Time.deltaTime / segmentLength : 0f;
@@ -232,6 +270,8 @@ public class EnemyPathFollower : MonoBehaviour
             currentWaypointIndex,
             segmentProgress
         ) + fixedOffset;
+
+        velocity = (position - transform.position) / Time.deltaTime;
 
         Vector3 tangent = EvaluateCatmullRomTangent(currentWaypointIndex, segmentProgress);
         if (tangent.sqrMagnitude > 0.001f)
@@ -291,8 +331,18 @@ public class EnemyPathFollower : MonoBehaviour
     {
         transform.position = path.GetWaypoint(path.Count - 1);
 
-        if (enemyDefinition.behaviour == EnemyBehaviour.TargetBuds)
-            currentState = EnemyState.SeekingBud;
+        switch (enemyDefinition.behaviour)
+        {
+            case EnemyBehaviour.TargetBuds:
+                currentState = EnemyState.SeekingBud;
+                break;
+            case EnemyBehaviour.TargetPlayer:
+                currentState = EnemyState.SeekingPlayer;
+                break;
+            default:
+                currentState = EnemyState.SeekingBud;
+                break;
+        }
 
         Debug.Log($"[EnemyPathFollower] Arrived. Behaviour: {enemyDefinition?.behaviour}");
     }
@@ -316,6 +366,8 @@ public class EnemyPathFollower : MonoBehaviour
 
         transform.localScale = Vector3.one * rolledSize;
 
+        hittableLayer = LayerMask.GetMask("Hittable");
+
         EnemyHealth health = GetComponent<EnemyHealth>();
         if (health != null)
             health.Initialize(definition, rolledSize, statMultiplier);
@@ -330,6 +382,8 @@ public class EnemyPathFollower : MonoBehaviour
 
     private void CheckBehaviour()
     {
+        if (IsInGrace()) return;
+
         if (PlayerInventory.Instance == null) return;
         if (enemyDefinition == null) return;
 
@@ -373,6 +427,9 @@ public class EnemyPathFollower : MonoBehaviour
             if (shouldReturn)
             {
                 currentState = EnemyState.ReturningToPath;
+                returnIndexTimer = returnIndexInterval;
+                isBlending = false;
+                returnBlend = 0f;
                 return;
             }
         }
@@ -381,7 +438,10 @@ public class EnemyPathFollower : MonoBehaviour
             if (currentState == EnemyState.AttackingPlayer &&
                 distToPlayer > meleeRange)
             {
-                currentState = EnemyState.Moving;
+                currentState = EnemyState.ReturningToPath;
+                returnIndexTimer = returnIndexInterval;
+                isBlending = false;
+                returnBlend = 0f;
                 return;
             }
         }
@@ -392,8 +452,6 @@ public class EnemyPathFollower : MonoBehaviour
         Vector3 playerPos = PlayerInventory.Instance.transform.position;
         Vector3 direction = playerPos - transform.position;
         direction.y = 0f;
-
-        float distance = direction.magnitude;
 
         if (direction.sqrMagnitude > 0.001f)
         {
@@ -406,13 +464,108 @@ public class EnemyPathFollower : MonoBehaviour
             transform.eulerAngles = new Vector3(0f, angle, 0f);
         }
 
-        rb.MovePosition(transform.position + direction.normalized * derivedSpeed * Time.deltaTime);
+        Vector3 dir = direction.normalized;
+        bool wallBlocking = Physics.SphereCast(
+            transform.position,
+            0.3f,
+            dir,
+            out RaycastHit wallHit,
+            derivedSpeed * Time.fixedDeltaTime * 2f,
+            LayerMask.GetMask("Default", "Wall")
+        );
+
+        if (wallBlocking)
+        {
+            currentState = EnemyState.ReturningToPath;
+            returnIndexTimer = returnIndexInterval;
+            isBlending = false;
+            returnBlend = 0f;
+            return;
+        }
+
+        rb.MovePosition(transform.position + dir * derivedSpeed * Time.deltaTime);
     }
 
     private void ReturnToPath()
     {
         if (path == null) return;
 
+        if (isBlending)
+        {
+            returnBlend += Time.fixedDeltaTime * blendSpeed;
+            returnBlend = Mathf.Clamp01(returnBlend);
+
+            Vector3 targetPos = EvaluateCatmullRom(blendTargetWaypointIndex, 0f) + fixedOffset;
+
+            Vector3 tangent = EvaluateCatmullRomTangent(blendTargetWaypointIndex, 0f);
+            Quaternion targetRot = tangent.sqrMagnitude > 0.001f
+                ? Quaternion.LookRotation(tangent.normalized)
+                : transform.rotation;
+
+            Vector3 blendPos = Vector3.Lerp(blendStartPos, targetPos, returnBlend);
+            Quaternion blendRot = Quaternion.Slerp(blendStartRot, targetRot, returnBlend);
+
+            rb.MovePosition(blendPos);
+            transform.rotation = blendRot;
+
+            if (returnBlend >= 1f)
+            {
+                isBlending = false;
+                returnBlend = 0f;
+                currentState = EnemyState.Moving;
+                segmentProgress = 0f;
+            }
+
+            return;
+        }
+
+        returnIndexTimer += Time.fixedDeltaTime;
+
+        float distToTarget = Vector3.Distance(
+            transform.position,
+            path.GetWaypoint(cachedReturnIndex) + fixedOffset);
+
+        bool isClose = distToTarget < MasterManager.TileScale * 2f;
+
+        if (isClose || returnIndexTimer >= returnIndexInterval)
+        {
+            returnIndexTimer = 0f;
+            cachedReturnIndex = FindNearestWaypointIndex();
+        }
+
+        Vector3 target = path.GetWaypoint(cachedReturnIndex) + fixedOffset;
+        Vector3 direction = (target - transform.position);
+        direction.y = 0f;
+
+        if (direction.sqrMagnitude > 0.001f)
+        {
+            float targetAngle = Mathf.Atan2(direction.x, direction.z) * Mathf.Rad2Deg;
+            float angle = Mathf.LerpAngle(
+                transform.eulerAngles.y,
+                targetAngle,
+                rotationSpeed * Time.deltaTime
+            );
+            transform.eulerAngles = new Vector3(0f, angle, 0f);
+        }
+
+        float returnSpeed = derivedSpeed * 0.5f;
+        rb.MovePosition(transform.position + direction.normalized * returnSpeed * Time.fixedDeltaTime);
+
+        float snapThreshold = Mathf.Max(derivedSpeed * Time.fixedDeltaTime * 1.5f, 0.5f);
+        if (direction.magnitude < snapThreshold)
+        {
+            isBlending = true;
+            returnBlend = 0f;
+            blendStartPos = transform.position;
+            blendStartRot = transform.rotation;
+            blendTargetWaypointIndex = cachedReturnIndex;
+            currentWaypointIndex = cachedReturnIndex;
+            segmentProgress = 0f;
+        }
+    }
+
+    private int FindNearestWaypointIndex()
+    {
         int targetIndex = 0;
         float closestDist = float.MaxValue;
 
@@ -428,31 +581,41 @@ public class EnemyPathFollower : MonoBehaviour
             }
         }
 
-        Vector3 target = path.GetWaypoint(targetIndex) + fixedOffset;
-        Vector3 direction = (target - transform.position);
-        direction.y = 0f;
+        return targetIndex;
+    }
 
-        if (direction.sqrMagnitude > 0.001f)
+    private Vector3 CalculateSeparation()
+    {
+        Collider[] nearby = Physics.OverlapSphere(
+            transform.position,
+            rolledSize * 1.5f,
+            LayerMask.GetMask("Enemy")
+        );
+
+        Vector3 separation = Vector3.zero;
+        int count = 0;
+
+        foreach (Collider col in nearby)
         {
-            float targetAngle = Mathf.Atan2(direction.x, direction.z) * Mathf.Rad2Deg;
-            float angle = Mathf.LerpAngle(
-                transform.eulerAngles.y,
-                targetAngle,
-                rotationSpeed * Time.deltaTime
-            );
-            transform.eulerAngles = new Vector3(0f, angle, 0f);
+            if (col.gameObject == gameObject) continue;
+            Vector3 away = transform.position - col.transform.position;
+            away.y = 0f;
+            float dist = away.magnitude;
+            if (dist < 0.001f)
+            {
+                away = new Vector3(Random.Range(-1f, 1f), 0f, Random.Range(-1f, 1f));
+                dist = 0.1f;
+            }
+            float overlap = rolledSize * 1.5f - dist;
+            if (overlap > 0f)
+            {
+                separation += away.normalized * overlap;
+                count++;
+            }
         }
 
-        rb.MovePosition(transform.position + direction.normalized * derivedSpeed * Time.deltaTime);
-
-        if (direction.magnitude < 0.005f * MasterManager.TileScale)
-        {
-            rb.position = target;
-            transform.position = target;
-            currentWaypointIndex = targetIndex;
-            segmentProgress = 0f;
-            currentState = EnemyState.Moving;
-        }
+        if (count > 0) separation /= count;
+        return separation * 2f;
     }
 
     private void AttackPlayer()

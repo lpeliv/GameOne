@@ -151,6 +151,11 @@ public class MapVisualizer : MonoBehaviour
             if (mf == null || mr == null) continue;
             if (mr.sharedMaterial == healthBudMaterial) continue;
             if (child.GetComponent<BuildableTile>() != null) continue;
+            if (mf.sharedMesh == null) continue;
+            if (!mf.sharedMesh.isReadable)
+            {
+                continue;
+            }
 
             originals.Add(child.gameObject);
             Material mat = mr.sharedMaterial;

@@ -78,25 +78,28 @@ public class AddonInteractionDetector : MonoBehaviour
 
         if (Physics.Raycast(ray, out hit, interactRange, interactLayer))
         {
-            TurretJoint joint = hit.collider.GetComponentInParent<TurretJoint>();
-            if (joint != null)
+            if (((1 << hit.collider.gameObject.layer) & interactLayer) != 0)
             {
-                HandleJointDetected(joint);
-                return;
-            }
+                TurretJoint joint = hit.collider.GetComponentInParent<TurretJoint>();
+                if (joint != null)
+                {
+                    HandleJointDetected(joint);
+                    return;
+                }
 
-            TurretAddon addon = hit.collider.GetComponentInParent<TurretAddon>();
-            if (addon != null)
-            {
-                HandleAddonDetected(addon);
-                return;
-            }
+                TurretAddon addon = hit.collider.GetComponentInParent<TurretAddon>();
+                if (addon != null)
+                {
+                    HandleAddonDetected(addon);
+                    return;
+                }
 
-            IInteractable interactable = hit.collider.GetComponentInParent<IInteractable>();
-            if (interactable != null)
-            {
-                ShowPrompt(interactable.InteractionPrompt);
-                return;
+                IInteractable interactable = hit.collider.GetComponentInParent<IInteractable>();
+                if (interactable != null)
+                {
+                    ShowPrompt(interactable.InteractionPrompt);
+                    return;
+                }
             }
         }
 
@@ -110,6 +113,7 @@ public class AddonInteractionDetector : MonoBehaviour
         RaycastHit hit;
 
         if (!Physics.Raycast(ray, out hit, interactRange, interactLayer)) return;
+        if (((1 << hit.collider.gameObject.layer) & interactLayer) == 0) return;
 
         TurretJoint joint = hit.collider.GetComponentInParent<TurretJoint>();
         if (joint != null)
@@ -144,6 +148,7 @@ public class AddonInteractionDetector : MonoBehaviour
 
         if (carrySystem.IsCarrying)
         {
+            Debug.Log($"[AddonInteractionDetector] Placing carried addon on joint. Joint occupied: {joint.IsOccupied}");
             TurretAddon swapped = carrySystem.PlaceOnJoint(joint);
             if (swapped != null)
                 carrySystem.PickUp(swapped);

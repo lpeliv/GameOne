@@ -39,13 +39,11 @@ public class TurretCylinder : MonoBehaviour
     {
         if (!isActive)
         {
-            Debug.Log("[TurretCylinder] Not active.");
             return;
         }
 
         if (!HasAddon)
         {
-            Debug.Log("[TurretCylinder] No addon attached.");
             return;
         }
 
@@ -54,7 +52,6 @@ public class TurretCylinder : MonoBehaviour
         {
             queryTimer = 0f;
             UpdateTarget();
-            Debug.Log($"[TurretCylinder] Target after update: {currentTarget?.name ?? "null"}");
         }
 
         if (currentTarget != null)

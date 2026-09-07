@@ -1,3 +1,4 @@
+using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
@@ -36,12 +37,16 @@ public class WaveManager : MonoBehaviour
     private int halfChargeCount = 0;
     private int obstacleRemoverCount = 0;
 
+    public static WaveManager Instance { get; private set; }
+
     public bool WaveActive => waveActive;
     public int CurrentWaveIndex => currentWaveIndex;
     public int HalfChargeCount => halfChargeCount;
     public int ObstacleRemoverCount => obstacleRemoverCount;
 
     private List<EnemySpawner> activeSpawners = new List<EnemySpawner>();
+    private int lastSpawnerIndex = 0;
+    private Dictionary<Vector2Int, EnemyPath> spawnerPathCache = new Dictionary<Vector2Int, EnemyPath>();
     [SerializeField] private BranchObstacleManager branchObstacleManager;
     [SerializeField] private HealthBudManager healthBudManager;
 
@@ -50,8 +55,6 @@ public class WaveManager : MonoBehaviour
     [Header("Testing")]
     [SerializeField] private KeyCode startWaveKey = KeyCode.L;
     [SerializeField] private KeyCode endWaveKey = KeyCode.K;
-    [SerializeField] private KeyCode removeObstacleKey = KeyCode.R;
-    [SerializeField] private int testBranchIndex = 0;
 
     private bool isGameOver = false;
 
@@ -60,6 +63,13 @@ public class WaveManager : MonoBehaviour
 
     private void Awake()
     {
+        if (Instance != null && Instance != this)
+        {
+            Destroy(gameObject);
+            return;
+        }
+        Instance = this;
+
         currentWaveIndex = 0;
         waveActive = false;
     }
@@ -67,31 +77,49 @@ public class WaveManager : MonoBehaviour
     private void UpdateActiveSpawners()
     {
         activeSpawners.Clear();
+        lastSpawnerIndex = 0;
+        spawnerPathCache.Clear();
 
-        int unlockedCount = zoneDefinition.GetUnlockedSpawnerCount(currentWaveIndex);
         IReadOnlyList<EnemySpawner> zoneSpawners = spawnerManager.GetSpawnerForZone(zoneDefinition.side);
+        Side side = zoneDefinition.side;
+
+        Debug.Log($"[WaveManager] UpdateActiveSpawners: zoneSpawners={zoneSpawners.Count}");
 
         foreach (EnemySpawner spawner in zoneSpawners)
         {
             if (spawner.SpawnerType == SpawnerType.Main)
             {
                 activeSpawners.Add(spawner);
+                Debug.Log($"[WaveManager] Added Main spawner: {spawner.name}, GridPos={spawner.Data.gridPos}, IsActive={spawner.IsActive}");
                 break;
             }
         }
 
-        int branchesAdded = 0;
+        int branchIndex = 0;
         foreach (EnemySpawner spawner in zoneSpawners)
         {
-            if (activeSpawners.Count >= unlockedCount) break;
             if (spawner.SpawnerType != SpawnerType.Branch) continue;
 
-            activeSpawners.Add(spawner);
-            branchesAdded++;
+            bool obstacleRemoved = branchObstacleManager.IsObstacleRemoved(side, branchIndex);
+            Debug.Log($"[WaveManager] Branch spawner: {spawner.name}, branchIndex={branchIndex}, GridPos={spawner.Data.gridPos}, obstacleRemoved={obstacleRemoved}");
+
+            if (obstacleRemoved)
+            {
+                activeSpawners.Add(spawner);
+                Debug.Log($"[WaveManager] Added Branch spawner: {spawner.name}, IsActive={spawner.IsActive}");
+            }
+            else
+            {
+                Debug.Log($"[WaveManager] Skipped Branch spawner: {spawner.name} (obstacle still present)");
+            }
+
+            branchIndex++;
         }
 
         Debug.Log($"[WaveManager] Active spawners: {activeSpawners.Count} for wave {currentWaveIndex + 1}.");
     }
+
+    private Coroutine waveStartCoroutine;
 
     public void TryStartWave()
     {
@@ -109,10 +137,10 @@ public class WaveManager : MonoBehaviour
 
         if (!CanStartNextWave())
         {
-            Debug.LogWarning("[WaveManager] Cannot start wave — obstacle must be removed first.");
+            Debug.LogWarning("[WaveManager] Cannot start wave â€” obstacle must be removed first.");
             return;
         }
-        
+
         TakeSnapshot();
 
         WaveDefinition wave = zoneDefinition.GetWave(currentWaveIndex);
@@ -122,22 +150,35 @@ public class WaveManager : MonoBehaviour
             return;
         }
 
-        Debug.Log($"[WaveManager] Pool size: {wave.BuildShuffledPool().Count}");
-        Debug.Log($"[WaveManager] Active spawners: {activeSpawners.Count}");
+        SendNPCsToHouse();
 
-        if (waveActive)
+        if (waveStartCoroutine != null)
+            StopCoroutine(waveStartCoroutine);
+        waveStartCoroutine = StartCoroutine(WaitUntilNPCsInsideThenStart(wave));
+    }
+
+    private IEnumerator WaitUntilNPCsInsideThenStart(WaveDefinition wave)
+    {
+        Debug.Log("[WaveManager] Waiting for NPCs to reach house...");
+
+        bool allInside = false;
+        while (!allInside)
         {
-            Debug.LogWarning("[WaveManager] Wave already active.");
-            return;
+            allInside = true;
+            foreach (NPCBase npc in npcs)
+            {
+                if (npc != null && !npc.IsAtHouse)
+                {
+                    allInside = false;
+                    break;
+                }
+            }
+            if (!allInside)
+                yield return null;
         }
 
-        if (!CanStartNextWave())
-        {
-            Debug.LogWarning("[WaveManager] Cannot start wave — obstacle must be removed first.");
-            return;
-        }
-
-        if (wave == null) return;
+        Debug.Log("[WaveManager] All NPCs inside. Closing doors and starting wave.");
+        CloseDoors();
 
         remainingPool = wave.BuildShuffledPool();
         currentWeightLimit = zoneDefinition.GetStartingWeightLimit(currentWaveIndex);
@@ -149,10 +190,10 @@ public class WaveManager : MonoBehaviour
         waveActive = true;
 
         UpdateActiveSpawners();
+        ActivateSpawners();
 
-        CloseDoors();
-        SendNPCsToHouse();
         Debug.Log($"[WaveManager] Wave {currentWaveIndex + 1} started.");
+        waveStartCoroutine = null;
     }
 
     private void CleanDeadEnemies()
@@ -173,7 +214,6 @@ public class WaveManager : MonoBehaviour
     private void OnWaveComplete()
     {
         Debug.Log($"[WaveManager] Wave {currentWaveIndex + 1} complete.");
-        AwardHalfCharge();
 
         currentWaveIndex++;
 
@@ -208,9 +248,6 @@ public class WaveManager : MonoBehaviour
         if (Input.GetKeyDown(endWaveKey) && waveActive)
             ForceEndWave();
 
-        if (Input.GetKeyDown(removeObstacleKey))
-            TryUseObstacleRemover(testBranchIndex);
-
         if (!waveActive) return;
 
         waveElapsedTime += Time.deltaTime;
@@ -237,7 +274,33 @@ public class WaveManager : MonoBehaviour
         return total;
     }
 
-    private EnemySpawner GetRandomActiveSpawner()
+    private EnemyPath GetPathForSpawner(EnemySpawner spawner)
+    {
+        Vector2Int gridPos = spawner.Data.gridPos;
+
+        if (spawner.SpawnerType == SpawnerType.Main)
+            return zoneGrid.enemyPath;
+
+        if (spawnerPathCache.TryGetValue(gridPos, out EnemyPath cached))
+            return cached;
+
+        EnemyPath path = zoneGrid.BuildPathFromSpawner(gridPos);
+        spawnerPathCache[gridPos] = path;
+        Debug.Log($"[WaveManager] Built path for branch spawner at {gridPos}, waypoints: {path.Count}");
+        Debug.Log($"[WaveManager] Path built for {spawner.name}: {path?.Count} waypoints");
+        return path;
+    }
+
+    private void ActivateSpawners()
+    {
+        foreach (EnemySpawner spawner in activeSpawners)
+        {
+            if (spawner != null && !spawner.IsActive)
+                spawner.Activate();
+        }
+    }
+
+    private EnemySpawner GetNextSpawner()
     {
         if (activeSpawners.Count == 0)
         {
@@ -245,7 +308,22 @@ public class WaveManager : MonoBehaviour
             return null;
         }
 
-        return activeSpawners[Random.Range(0, activeSpawners.Count)];
+        int attempts = activeSpawners.Count;
+        while (attempts > 0)
+        {
+            int index = lastSpawnerIndex % activeSpawners.Count;
+            lastSpawnerIndex++;
+            EnemySpawner spawner = activeSpawners[index];
+            if (spawner != null && spawner.IsActive)
+            {
+                Debug.Log($"[WaveManager] Spawning from: {spawner.name}");
+                return spawner;
+            }
+            attempts--;
+        }
+
+        Debug.LogWarning("[WaveManager] No active spawners available.");
+        return null;
     }
 
     private void TryReleaseNext()
@@ -265,7 +343,7 @@ public class WaveManager : MonoBehaviour
         EnemyDefinition definition = remainingPool[0];
         remainingPool.RemoveAt(0);
 
-        EnemySpawner spawner = GetRandomActiveSpawner();
+        EnemySpawner spawner = GetNextSpawner();
         if (spawner == null)
         {
             Debug.LogWarning("[WaveManager] No active spawner available.");
@@ -294,7 +372,7 @@ public class WaveManager : MonoBehaviour
             return;
         }
 
-        EnemySpawner spawner = GetRandomActiveSpawner();
+        EnemySpawner spawner = GetNextSpawner();
         if (spawner == null) return;
 
         SpawnEnemy(bossDefinition, spawner, wave.isFinalWave
@@ -325,7 +403,9 @@ public class WaveManager : MonoBehaviour
             return;
         }
 
-        follower.SetPath(zoneGrid.enemyPath);
+        Debug.Log($"[WaveManager] Spawning from: {spawner.name}, GridPos: {spawner.Data.gridPos}, Type: {spawner.SpawnerType}");
+        EnemyPath path = GetPathForSpawner(spawner);
+        follower.SetPath(path);
         follower.Initialize(definition, statMultiplier);
         follower.SetHealthBudManager(healthBudManager);
         follower.StartMoving();
@@ -379,6 +459,8 @@ public class WaveManager : MonoBehaviour
 
     public bool TryUseObstacleRemover(int branchIndex)
     {
+        Debug.Log($"[WaveManager] TryUseObstacleRemover called with branchIndex: {branchIndex}");
+
         if (obstacleRemoverCount <= 0)
         {
             Debug.LogWarning("[WaveManager] No obstacle removers available.");
@@ -392,11 +474,20 @@ public class WaveManager : MonoBehaviour
             return false;
         }
 
+        Debug.Log($"[WaveManager] Found obstacle at branchIndex: {branchIndex}, GridPos: {obstacle.GridPos}");
+
         obstacleRemoverCount--;
         obstacleRemovedThisCycle = true;
         branchObstacleManager.RemoveObstacleForBranch(zoneDefinition.side, branchIndex);
 
-        Debug.Log($"[WaveManager] Branch {branchIndex} obstacle removed. Remainig removers: {obstacleRemoverCount}");
+        UpdateActiveSpawners();
+        ActivateSpawners();
+
+        Debug.Log($"[WaveManager] Branch {branchIndex} obstacle removed. Remaining removers: {obstacleRemoverCount}");
+        Debug.Log($"[WaveManager] Active spawners after removal:");
+        for (int i = 0; i < activeSpawners.Count; i++)
+            Debug.Log($"  [{i}] {activeSpawners[i].name}, GridPos={activeSpawners[i].Data.gridPos}, IsActive={activeSpawners[i].IsActive}");
+
         return true;
     }
 

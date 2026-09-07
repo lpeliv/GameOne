@@ -20,21 +20,30 @@ public class EngineerShopUI : ShopUIBase
     [Header("Shop")]
     [SerializeField] private TextMeshProUGUI goldText;
 
-    [Header("Navigation")]
+    [Header("Base Navigator")]
+    [SerializeField] private Button basePrevButton;
+    [SerializeField] private Button baseNextButton;
+    [SerializeField] private TextMeshProUGUI baseIndexText;
+    [SerializeField] private RawImage baseModelDisplay;
+    [SerializeField] private TextMeshProUGUI baseNameText;
+    [SerializeField] private TextMeshProUGUI baseStatsText;
+    [SerializeField] private TextMeshProUGUI baseCostText;
+    [SerializeField] private GameObject baseActionRow;
+    [SerializeField] private Button baseBuyButton;
+    [SerializeField] private Button sellBaseButton;
+    [SerializeField] private GameObject baseProgressPanel;
+    [SerializeField] private Slider baseProgressSlider;
+    [SerializeField] private TextMeshProUGUI baseProgressText;
+
+    [Header("Addon Navigator")]
     [SerializeField] private Button prevButton;
     [SerializeField] private Button nextButton;
     [SerializeField] private TextMeshProUGUI blueprintIndexText;
-
-    [Header("Model Display")]
     [SerializeField] private RectTransform modelDisplayArea;
     [SerializeField] private RawImage modelDisplay;
-
-    [Header("Action Row")]
     [SerializeField] private GameObject actionRow;
     [SerializeField] private Button buyButton;
     [SerializeField] private Button sellButton;
-
-    [Header("Stats Panel")]
     [SerializeField] private TextMeshProUGUI blueprintNameText;
     [SerializeField] private TextMeshProUGUI statsText;
     [SerializeField] private TextMeshProUGUI costText;
@@ -43,6 +52,7 @@ public class EngineerShopUI : ShopUIBase
     [SerializeField] private TextMeshProUGUI progressText;
 
     [Header("Blueprints")]
+    [SerializeField] private List<TurretDefinition> availableBases;
     [SerializeField] private List<AddonDefinition> availableAddons;
 
     [Header("Animation")]
@@ -52,6 +62,13 @@ public class EngineerShopUI : ShopUIBase
     [SerializeField] private Button turretsTabButton;
     [SerializeField] private Button mattsTabButton;
 
+    [Header("Sub-Tabs")]
+    [SerializeField] private GameObject basesSection;
+    [SerializeField] private GameObject addonsSection;
+    [SerializeField] private Button basesSubTabButton;
+    [SerializeField] private Button addonsSubTabButton;
+
+    private int currentBaseIndex = 0;
     private int currentIndex = 0;
     private Coroutine slideCoroutine;
     private float modelDisplayRestX;
@@ -60,6 +77,15 @@ public class EngineerShopUI : ShopUIBase
     {
         turretsTabButton.onClick.AddListener(ShowTurretsTab);
         mattsTabButton.onClick.AddListener(ShowMattsTab);
+
+        if (basePrevButton != null) basePrevButton.onClick.AddListener(PrevBase);
+        if (baseNextButton != null) baseNextButton.onClick.AddListener(NextBase);
+        if (baseBuyButton != null) baseBuyButton.onClick.AddListener(TryBuyBase);
+        if (sellBaseButton != null) sellBaseButton.onClick.AddListener(TrySellBase);
+
+        if (basesSubTabButton != null) basesSubTabButton.onClick.AddListener(ShowBasesSection);
+        if (addonsSubTabButton != null) addonsSubTabButton.onClick.AddListener(ShowAddonsSection);
+
         prevButton.onClick.AddListener(PrevBlueprint);
         nextButton.onClick.AddListener(NextBlueprint);
         buyButton.onClick.AddListener(TryBuy);
@@ -72,6 +98,20 @@ public class EngineerShopUI : ShopUIBase
     {
         turretsTabContent.SetActive(true);
         mattsTabContent.SetActive(false);
+        ShowBasesSection();
+    }
+
+    public void ShowBasesSection()
+    {
+        if (basesSection != null) basesSection.SetActive(true);
+        if (addonsSection != null) addonsSection.SetActive(false);
+        PopulateBases();
+    }
+
+    public void ShowAddonsSection()
+    {
+        if (basesSection != null) basesSection.SetActive(false);
+        if (addonsSection != null) addonsSection.SetActive(true);
         PopulateBlueprints();
     }
 
@@ -88,6 +128,7 @@ public class EngineerShopUI : ShopUIBase
         engineerShopPanel.SetActive(true);
         dialogue1Text.text = defaultDialogue1;
         dialogue2Text.text = defaultDialogue2;
+        currentBaseIndex = 0;
         currentIndex = 0;
         ShowTurretsTab();
     }
@@ -101,6 +142,128 @@ public class EngineerShopUI : ShopUIBase
             slideCoroutine = null;
         }
         StopAllCoroutines();
+    }
+
+    private void PopulateBases()
+    {
+        UpdateGoldDisplay();
+
+        if (availableBases == null || availableBases.Count == 0)
+        {
+            if (baseNameText != null) baseNameText.text = "No base blueprints";
+            if (baseStatsText != null) baseStatsText.text = "";
+            if (baseCostText != null) baseCostText.text = "";
+            if (baseActionRow != null) baseActionRow.SetActive(false);
+            if (baseProgressPanel != null) baseProgressPanel.SetActive(false);
+            if (baseIndexText != null) baseIndexText.text = "0 / 0";
+            if (basePrevButton != null) basePrevButton.interactable = false;
+            if (baseNextButton != null) baseNextButton.interactable = false;
+            return;
+        }
+
+        if (basePrevButton != null) basePrevButton.interactable = availableBases.Count > 1;
+        if (baseNextButton != null) baseNextButton.interactable = availableBases.Count > 1;
+        ShowCurrentBase();
+    }
+
+    private void ShowCurrentBase()
+    {
+        if (availableBases == null || availableBases.Count == 0) return;
+
+        currentBaseIndex = Mathf.Clamp(currentBaseIndex, 0, availableBases.Count - 1);
+        TurretDefinition def = availableBases[currentBaseIndex];
+        BlueprintProgress progress = PlayerInventory.Instance.BlueprintProgress;
+
+        Debug.Log($"[EngineerShopUI] BlueprintProgress instance: {progress != null}");
+        Debug.Log($"[EngineerShopUI] Checking id: '{def.blueprintId}'");
+        Debug.Log($"[EngineerShopUI] Parts found: {progress.GetPartsFound(def.blueprintId)}");
+        Debug.Log($"[EngineerShopUI] ShowCurrentBase: name='{def.displayName}', blueprintId='{def.blueprintId}', unlocked={progress.IsUnlocked(def.blueprintId)}");
+
+        bool unlocked = progress.IsUnlocked(def.blueprintId);
+
+        if (baseIndexText != null) baseIndexText.text = $"{currentBaseIndex + 1} / {availableBases.Count}";
+        if (baseNameText != null) baseNameText.text = unlocked ? def.displayName : "???";
+
+        if (unlocked)
+        {
+            if (baseModelDisplay != null) baseModelDisplay.color = Color.white;
+            if (baseActionRow != null) baseActionRow.SetActive(true);
+            if (baseBuyButton != null) baseBuyButton.interactable = PlayerInventory.Instance.HasGold(def.buildCost);
+            if (baseStatsText != null) baseStatsText.text = $"HP: {def.maxHealth}\nCylinders: {def.cylinderCount}";
+            if (baseCostText != null) baseCostText.text = $"{def.buildCost}g";
+            if (baseProgressPanel != null) baseProgressPanel.SetActive(false);
+        }
+        else
+        {
+            if (baseModelDisplay != null) baseModelDisplay.color = new Color(0.2f, 0.2f, 0.2f, 1f);
+            if (baseActionRow != null) baseActionRow.SetActive(false);
+            if (baseStatsText != null) baseStatsText.text = "";
+            if (baseCostText != null) baseCostText.text = "";
+            if (baseProgressPanel != null) baseProgressPanel.SetActive(true);
+            int partsFound = progress.GetPartsFound(def.blueprintId);
+            if (baseProgressSlider != null)
+            {
+                baseProgressSlider.interactable = false;
+                baseProgressSlider.maxValue = 3;
+                baseProgressSlider.value = partsFound;
+            }
+            if (baseProgressText != null) baseProgressText.text = $"{partsFound}/3 parts found";
+        }
+
+        UpdateGoldDisplay();
+    }
+
+    public void NextBase()
+    {
+        if (availableBases == null || availableBases.Count <= 1) return;
+        currentBaseIndex = (currentBaseIndex + 1) % availableBases.Count;
+        ShowCurrentBase();
+    }
+
+    public void PrevBase()
+    {
+        if (availableBases == null || availableBases.Count <= 1) return;
+        currentBaseIndex = (currentBaseIndex - 1 + availableBases.Count) % availableBases.Count;
+        ShowCurrentBase();
+    }
+
+    private void TryBuyBase()
+    {
+        if (PlayerInventory.Instance == null) return;
+        if (availableBases == null || availableBases.Count == 0) return;
+
+        TurretDefinition def = availableBases[currentBaseIndex];
+        if (!PlayerInventory.Instance.BlueprintProgress.IsUnlocked(def.blueprintId)) return;
+
+        if (!PlayerInventory.Instance.SpendGold(def.buildCost))
+        {
+            Debug.Log($"[EngineerShopUI] Not enough gold for {def.displayName}.");
+            return;
+        }
+
+        PlayerInventory.Instance.AddBase(def);
+        Debug.Log($"[EngineerShopUI] Purchased base {def.displayName} for {def.buildCost}g.");
+
+        UpdateGoldDisplay();
+        ShowCurrentBase();
+    }
+
+    private void TrySellBase()
+    {
+        if (PlayerInventory.Instance == null) return;
+        if (availableBases == null || availableBases.Count == 0) return;
+
+        TurretDefinition def = availableBases[currentBaseIndex];
+        if (!PlayerInventory.Instance.BlueprintProgress.IsUnlocked(def.blueprintId)) return;
+        if (!PlayerInventory.Instance.HasBase(def)) return;
+
+        int refund = def.buildCost / 2;
+        PlayerInventory.Instance.RemoveBase(def);
+        PlayerInventory.Instance.AddGold(refund);
+        Debug.Log($"[EngineerShopUI] Sold base {def.displayName} for {refund}g.");
+
+        UpdateGoldDisplay();
+        ShowCurrentBase();
     }
 
     private void PopulateBlueprints()
@@ -131,7 +294,7 @@ public class EngineerShopUI : ShopUIBase
 
         AddonDefinition def = availableAddons[currentIndex];
         BlueprintProgress progress = PlayerInventory.Instance.BlueprintProgress;
-        bool unlocked = progress.IsUnlocked(def.displayName);
+        bool unlocked = progress.IsUnlocked(def.blueprintId);
 
         blueprintIndexText.text = $"{currentIndex + 1} / {availableAddons.Count}";
         blueprintNameText.text = unlocked ? def.displayName : "???";
@@ -153,7 +316,7 @@ public class EngineerShopUI : ShopUIBase
             statsText.text = "";
             costText.text = "";
             progressPanel.SetActive(true);
-            int partsFound = progress.GetPartsFound(def.displayName);
+            int partsFound = progress.GetPartsFound(def.blueprintId);
             progressSlider.interactable = false;
             progressSlider.maxValue = 3;
             progressSlider.value = partsFound;
@@ -219,7 +382,7 @@ public class EngineerShopUI : ShopUIBase
         if (availableAddons == null || availableAddons.Count == 0) return;
 
         AddonDefinition def = availableAddons[currentIndex];
-        if (!PlayerInventory.Instance.BlueprintProgress.IsUnlocked(def.displayName)) return;
+        if (!PlayerInventory.Instance.BlueprintProgress.IsUnlocked(def.blueprintId)) return;
 
         if (!PlayerInventory.Instance.SpendGold(def.buildCost))
         {
@@ -227,6 +390,7 @@ public class EngineerShopUI : ShopUIBase
             return;
         }
 
+        PlayerInventory.Instance.AddAddon(def);
         Debug.Log($"[EngineerShopUI] Purchased addon {def.displayName} for {def.buildCost}g.");
 
         UpdateGoldDisplay();
@@ -239,7 +403,7 @@ public class EngineerShopUI : ShopUIBase
         if (availableAddons == null || availableAddons.Count == 0) return;
 
         AddonDefinition def = availableAddons[currentIndex];
-        if (!PlayerInventory.Instance.BlueprintProgress.IsUnlocked(def.displayName)) return;
+        if (!PlayerInventory.Instance.BlueprintProgress.IsUnlocked(def.blueprintId)) return;
 
         int refund = def.buildCost / 2;
         PlayerInventory.Instance.AddGold(refund);
@@ -257,6 +421,12 @@ public class EngineerShopUI : ShopUIBase
 
     private void OnDestroy()
     {
+        if (basePrevButton != null) basePrevButton.onClick.RemoveAllListeners();
+        if (baseNextButton != null) baseNextButton.onClick.RemoveAllListeners();
+        if (baseBuyButton != null) baseBuyButton.onClick.RemoveAllListeners();
+        if (sellBaseButton != null) sellBaseButton.onClick.RemoveAllListeners();
+        if (basesSubTabButton != null) basesSubTabButton.onClick.RemoveAllListeners();
+        if (addonsSubTabButton != null) addonsSubTabButton.onClick.RemoveAllListeners();
         prevButton.onClick.RemoveAllListeners();
         nextButton.onClick.RemoveAllListeners();
         buyButton.onClick.RemoveAllListeners();

@@ -60,8 +60,15 @@ public class PlayerController : MonoBehaviour
 
     public static bool LookLocked = false;
 
+    private float slowMultiplier = 1f;
+
+    public static PlayerController Instance { get; private set; }
+
     private void Awake()
     {
+        if (Instance != null && Instance != this) { Destroy(gameObject); return; }
+        Instance = this;
+
         controller = GetComponent<CharacterController>();
         input = new PlayerInputActions();
 
@@ -181,7 +188,7 @@ public class PlayerController : MonoBehaviour
 
         
         horizontalMove = transform.right  * moveInput.x + transform.forward * moveInput.y;
-        horizontalMove *= speed;
+        horizontalMove *= speed * slowMultiplier;
     }
 
     private void HandleCrouch()
@@ -279,6 +286,18 @@ public class PlayerController : MonoBehaviour
             enemyHealth.TakeDamage(meleeDamage);
 
         Debug.Log($"[PlayerController] Hammer hit: {hitCollider.gameObject.name}");
+    }
+
+    public void ApplySlow()
+    {
+        slowMultiplier = 0.25f;
+        Debug.Log("[PlayerController] Slow applied.");
+    }
+
+    public void RemoveSlow()
+    {
+        slowMultiplier = 1f;
+        Debug.Log("[PlayerController] Slow removed.");
     }
 
     private void TryAltAttack()

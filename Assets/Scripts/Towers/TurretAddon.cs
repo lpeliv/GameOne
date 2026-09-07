@@ -17,6 +17,7 @@ public class TurretAddon : MonoBehaviour
     public float FireRate => currentFireRate;
     public int CurrentTier => currentTier;
     public bool IsAttached => isAttached;
+    public AddonDefinition Definition => definition;
 
     [SerializeField] private AddonDefinition addonDefinition;
 

@@ -293,6 +293,13 @@ public class ZoneGridManager : MonoBehaviour
         enemyPath = builder.Build(pathGenerator.builtPath);
     }
 
+    public EnemyPath BuildPathFromSpawner(Vector2Int spawnerGridPos)
+    {
+        EnemyPathBuilder builder = new EnemyPathBuilder(gridInstance, worldOffset, facingSide);
+        Debug.Log($"[ZoneGridManager] Building path from {spawnerGridPos} to {endingPos}");
+        return builder.BuildFromSpawner(spawnerGridPos, endingPos);
+    }
+
     public ZoneGridData GetSaveData()
     {
         ZoneGridData data = new ZoneGridData();

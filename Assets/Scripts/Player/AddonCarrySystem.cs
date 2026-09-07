@@ -1,3 +1,4 @@
+using System;
 using UnityEngine;
 
 public class AddonCarrySystem : MonoBehaviour
@@ -13,10 +14,20 @@ public class AddonCarrySystem : MonoBehaviour
     public bool IsCarrying => carriedAddon != null;
     public TurretAddon CarriedAddon => carriedAddon;
 
+    public event Action OnAddonPlaced;
+
     public void PickUp(TurretAddon addon)
     {
-        if (addon == null) return;
-        if (IsCarrying) return;
+        if (addon == null)
+        {
+            Debug.LogWarning("[AddonCarrySystem] PickUp called with null addon.");
+            return;
+        }
+        if (IsCarrying)
+        {
+            Debug.LogWarning($"[AddonCarrySystem] Already carrying {carriedAddon.name}, cannot pick up {addon.name}.");
+            return;
+        }
 
         carriedAddon = addon;
         carriedAddon.transform.SetParent(holdPoint);
@@ -43,7 +54,12 @@ public class AddonCarrySystem : MonoBehaviour
 
     public TurretAddon PlaceOnJoint(TurretJoint joint)
     {
-        if (!IsCarrying) return null;
+        Debug.Log($"[AddonCarrySystem] PlaceOnJoint called. IsCarrying: {IsCarrying}, Joint null: {joint == null}");
+        if (!IsCarrying)
+        {
+            Debug.LogWarning("[AddonCarrySystem] PlaceOnJoint: not carrying anything.");
+            return null;
+        }
         if (joint == null) return null;
 
         TurretAddon addonToPlace = carriedAddon;
@@ -62,6 +78,7 @@ public class AddonCarrySystem : MonoBehaviour
 
         Debug.Log($"[AddonCarrySystem] Placed {addonToPlace.name} on joint.");
         hammerRoot?.SetActive(true);
+        OnAddonPlaced?.Invoke();
         return swappedAddon;
     }
 

@@ -1,6 +1,6 @@
 using UnityEngine;
 
-public class BranchObstacle : MonoBehaviour
+public class BranchObstacle : MonoBehaviour, IInteractable
 {
     private Vector2Int gridPos;
     private int branchIndex;
@@ -9,6 +9,17 @@ public class BranchObstacle : MonoBehaviour
     public Vector2Int GridPos => gridPos;
     public int BranchIndex => branchIndex;
     public bool IsRemoved => isRemoved;
+
+    public string InteractionPrompt
+    {
+        get
+        {
+            if (WaveManager.Instance == null) return "";
+            if (WaveManager.Instance.ObstacleRemoverCount > 0)
+                return "Remove Obstacle [E]";
+            return "Need obstacle remover";
+        }
+    }
 
     public void Initialize(Vector2Int gridPos, int branchIndex)
     {
@@ -29,8 +40,24 @@ public class BranchObstacle : MonoBehaviour
         Destroy(gameObject);
     }
 
-    public void Interact()
+    public void OnInteract()
     {
-        Remove();
+        if (isRemoved) return;
+
+        Debug.Log($"[BranchObstacle] Obstacle branchIndex: {branchIndex} interacted, GridPos: {gridPos}");
+
+        if (WaveManager.Instance == null)
+        {
+            Debug.LogWarning("[BranchObstacle] WaveManager.Instance is null.");
+            return;
+        }
+
+        if (WaveManager.Instance.ObstacleRemoverCount <= 0)
+        {
+            Debug.Log("[BranchObstacle] No obstacle removers available.");
+            return;
+        }
+
+        WaveManager.Instance.TryUseObstacleRemover(branchIndex);
     }
 }
